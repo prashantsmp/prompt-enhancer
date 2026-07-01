@@ -117,7 +117,7 @@ def parse_session_info(session: dict) -> dict:
 @app.get("/", response_class=HTMLResponse)
 async def get_dashboard(request: Request):
     """Renders the main dashboard page."""
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request, "index.html")
 
 @app.get("/api/sessions")
 async def list_sessions():
