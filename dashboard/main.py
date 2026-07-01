@@ -59,17 +59,22 @@ def parse_session_info(session: dict) -> dict:
     for event in events:
         parts = event.get("content", {}).get("parts", []) if event.get("content") else []
         for part in parts:
-            if "function_response" in part:
-                responded_call_ids.add(part["function_response"].get("id"))
+            func_resp = part.get("functionResponse") or part.get("function_response")
+            if func_resp:
+                resp_id = func_resp.get("id") or func_resp.get("response_id")
+                if resp_id:
+                    responded_call_ids.add(resp_id)
                 
     # Now find any unanswered vibe_diff_gate call
     for event in reversed(events):
         parts = event.get("content", {}).get("parts", []) if event.get("content") else []
         for part in parts:
-            if "function_call" in part:
-                call = part["function_call"]
-                if call.get("name") == "vibe_diff_gate" and call.get("id") not in responded_call_ids:
-                    pending_interrupt_id = call.get("id")
+            func_call = part.get("functionCall") or part.get("function_call")
+            if func_call:
+                call_name = func_call.get("name")
+                call_id = func_call.get("id")
+                if call_name == "vibe_diff_gate" and call_id not in responded_call_ids:
+                    pending_interrupt_id = call_id
                     break
         if pending_interrupt_id:
             break
@@ -79,11 +84,12 @@ def parse_session_info(session: dict) -> dict:
     for event in reversed(events):
         parts = event.get("content", {}).get("parts", []) if event.get("content") else []
         for part in parts:
-            if "function_response" in part:
-                resp = part["function_response"]
-                if resp.get("name") == "generate_image":
-                    output = resp.get("response", {})
-                    image_url = output.get("image_url")
+            func_resp = part.get("functionResponse") or part.get("function_response")
+            if func_resp:
+                if func_resp.get("name") == "generate_image":
+                    output = func_resp.get("response") or func_resp.get("output") or {}
+                    if isinstance(output, dict):
+                        image_url = output.get("image_url")
                     break
         if image_url:
             break
