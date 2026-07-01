@@ -73,6 +73,15 @@ def parse_session_info(session: dict) -> dict:
             if func_call:
                 call_name = func_call.get("name")
                 call_id = func_call.get("id")
+                
+                # Check for wrapped confirmation calls
+                if call_name == "adk_request_confirmation":
+                    args = func_call.get("args") or {}
+                    orig_call = args.get("originalFunctionCall") or args.get("original_function_call") or {}
+                    if orig_call:
+                        call_name = orig_call.get("name")
+                        call_id = orig_call.get("id")
+                        
                 if call_name == "vibe_diff_gate" and call_id not in responded_call_ids:
                     pending_interrupt_id = call_id
                     break
