@@ -51,42 +51,54 @@ def parse_session_info(session: dict) -> dict:
     # Count iterations of cot_rewriter runs
     iterations = sum(1 for e in events if e.get("author") == "cot_rewriter")
     
-    # Identify pending interrupt call for vibe_diff_gate
+    # Identify pending interrupt call directly from requestedToolConfirmations in actions
     pending_interrupt_id = None
-    responded_call_ids = set()
-    
-    # First, track all answered interrupts
-    for event in events:
-        parts = event.get("content", {}).get("parts", []) if event.get("content") else []
-        for part in parts:
-            func_resp = part.get("functionResponse") or part.get("function_response")
-            if func_resp:
-                resp_id = func_resp.get("id") or func_resp.get("response_id")
-                if resp_id:
-                    responded_call_ids.add(resp_id)
-                
-    # Now find any unanswered vibe_diff_gate call
     for event in reversed(events):
-        parts = event.get("content", {}).get("parts", []) if event.get("content") else []
-        for part in parts:
-            func_call = part.get("functionCall") or part.get("function_call")
-            if func_call:
-                call_name = func_call.get("name")
-                call_id = func_call.get("id")
-                
-                # Check for wrapped confirmation calls
-                if call_name == "adk_request_confirmation":
-                    args = func_call.get("args") or {}
-                    orig_call = args.get("originalFunctionCall") or args.get("original_function_call") or {}
-                    if orig_call:
-                        call_name = orig_call.get("name")
-                        call_id = orig_call.get("id")
-                        
-                if call_name == "vibe_diff_gate" and call_id not in responded_call_ids:
-                    pending_interrupt_id = call_id
-                    break
+        actions = event.get("actions") or {}
+        confirmations = actions.get("requestedToolConfirmations") or {}
+        for call_id, conf in confirmations.items():
+            if not conf.get("confirmed"):
+                pending_interrupt_id = call_id
+                break
         if pending_interrupt_id:
             break
+
+    # Fallback to functionCall history if not found in actions
+    if not pending_interrupt_id:
+        responded_call_ids = set()
+        for event in events:
+            parts = event.get("content", {}).get("parts", []) if event.get("content") else []
+            for part in parts:
+                func_resp = part.get("functionResponse") or part.get("function_response")
+                if func_resp:
+                    resp_id = func_resp.get("id") or func_resp.get("response_id")
+                    resp_content = func_resp.get("response") or {}
+                    has_error = False
+                    if isinstance(resp_content, dict):
+                        has_error = "error" in resp_content
+                    elif isinstance(resp_content, str):
+                        has_error = "error" in resp_content.lower()
+                    if resp_id and not has_error:
+                        responded_call_ids.add(resp_id)
+
+        for event in reversed(events):
+            parts = event.get("content", {}).get("parts", []) if event.get("content") else []
+            for part in parts:
+                func_call = part.get("functionCall") or part.get("function_call")
+                if func_call:
+                    call_name = func_call.get("name")
+                    call_id = func_call.get("id")
+                    if call_name == "adk_request_confirmation":
+                        args = func_call.get("args") or {}
+                        orig_call = args.get("originalFunctionCall") or args.get("original_function_call") or {}
+                        if orig_call:
+                            call_name = orig_call.get("name")
+                            call_id = orig_call.get("id")
+                    if call_name == "vibe_diff_gate" and call_id not in responded_call_ids:
+                        pending_interrupt_id = call_id
+                        break
+            if pending_interrupt_id:
+                break
             
     # Check if image has been generated
     image_url = None
