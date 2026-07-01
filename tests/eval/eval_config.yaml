@@ -1,0 +1,57 @@
+# tests/eval/eval_config.yaml
+
+metrics_to_run:
+  - final_response_quality
+  - safety
+  - hierarchy_compliance
+  - keypoint_alignment
+  - semantic_drift_check
+
+
+custom_metrics:
+  - name: hierarchy_compliance
+    prompt_template: |
+      You are an expert prompt engineer evaluator. Assess if the final rewritten prompt follows a strict 4-level descriptive hierarchy:
+      1. Opening Statement (primary focal point summary)
+      2. Spatially Organized Body (layout, foreground/background relations)
+      3. Hierarchical Object Description (colors, shapes, materials, textures)
+      4. Concluding Stylistic Identification (lighting, photo style, camera angle)
+
+      User Prompt: {prompt}
+      Final Response: {response}
+
+      Return JSON matching this structure:
+      {
+        "score": <integer from 1 to 5, where 5 means all 4 levels are present and distinct, and 1 means none are present>,
+        "explanation": "<rationale>"
+      }
+
+  - name: keypoint_alignment
+    prompt_template: |
+      Evaluate the rewritten prompt against these text-to-image keypoints:
+      - Negation (what NOT to include)
+      - Counting (specific and exact counts)
+      - Cross-Entity Binding (colors and attributes bound to the correct objects)
+      - Abstract Reasoning (translating metaphors/scale into visual details)
+
+      User Prompt: {prompt}
+      Final Response: {response}
+
+      Return JSON:
+      {
+        "score": <integer from 1 to 5, where 5 means perfect alignment across all keypoints and 1 means completely misaligned>,
+        "explanation": "<rationale>"
+      }
+
+  - name: semantic_drift_check
+    prompt_template: |
+      Compare the user's raw prompt and the rewritten prompt. Decide if the core semantic intent has been preserved (similarity >= 0.65) or if it has drifted (e.g. adding unrelated libraries, concepts, or elements not mentioned in the original prompt).
+
+      User Prompt: {prompt}
+      Final Response: {response}
+
+      Return JSON:
+      {
+        "score": <integer from 1 to 5, where 5 means core intent is fully preserved, and 1 means extreme drift or hallucination>,
+        "explanation": "<rationale>"
+      }

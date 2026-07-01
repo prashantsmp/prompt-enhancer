@@ -1,0 +1,1028 @@
+{
+  "eval_cases": [
+    {
+      "prompt": {
+        "parts": [
+          {
+            "text": "A huge turtle carrying a small city"
+          }
+        ],
+        "role": "user"
+      },
+      "responses": [
+        {
+          "response": {
+            "parts": [
+              {
+                "text": "The image generation process was successful.\n\n**Original Prompt:** A huge turtle carrying a small city\n**Final Enhanced Prompt:** A colossal, mythic World Turtle, its massive, craggy carapace entirely covered by a dense, miniature cliffside citadel, eternally drifting through an endless, atmospheric expanse. The foreground focuses on the immense, ancient turtle's moss-covered, deeply textured forelimb and the rugged stone foundation of the city resting precariously on the shell's edge. The midground is dominated by the sprawling, organically integrated city, rising in tiered levels towards the center peak of the shell. The background is a breathtaking vista of high-altitude lenticular clouds and swirling nebulae, emphasizing the creature's immense height and isolation. The turtle possesses scales like metamorphic rock, deep jade green, with ancient barnacles and luminous lichen clinging to its skin. The cityscape features dense, vertical fantasy architecture: structures of weathered gray slate and dark timber, peaked spires, arched bridges connecting different sectors, and tiny, warm orange lights glowing from thousands of windows, signaling internal life. Oxidized copper domes catch the distant celestial light. Epic, cinematic digital painting. Extreme wide-angle, low-angle perspective emphasizing monumental scale. Dramatic high-key rim lighting from an unseen nebula, casting deep, detailed shadows across the city streets. Highly detailed, photorealistic fantasy rendering, inspired by the texture work of Greg Rutkowski and the cosmic scale of Zdzisław Beksiński. Rich, desaturated color palette of emerald green, rust, and ethereal blues. (8K resolution).\n\n**Generated Image:** [Image Link](https://storage.googleapis.com/prompt-enhancer-mock-assets/generated_image.png)"
+              }
+            ],
+            "role": "model"
+          }
+        }
+      ],
+      "eval_case_id": "turtle_city_prompt",
+      "agent_data": {
+        "agents": {
+          "orchestrator": {
+            "agent_id": "orchestrator",
+            "agent_type": "SequentialAgent",
+            "description": "",
+            "tools": [],
+            "sub_agents": [
+              "refinement_loop",
+              "finalizer"
+            ]
+          },
+          "refinement_loop": {
+            "agent_id": "refinement_loop",
+            "agent_type": "LoopAgent",
+            "description": "",
+            "tools": [],
+            "sub_agents": [
+              "cot_rewriter",
+              "align_evaluator",
+              "loop_escalator"
+            ]
+          },
+          "cot_rewriter": {
+            "agent_id": "cot_rewriter",
+            "agent_type": "LlmAgent",
+            "description": "",
+            "instruction": "You are a specialized Text-to-Image (T2I) Prompt Engineering Specialist.\nYour task is to take a raw, short image prompt and perform Chain-of-Thought (CoT) reasoning to enrich it into a highly detailed description suitable for state-of-the-art T2I models (like Flux or Stable Diffusion).\n\nYou MUST follow this strict 4-level descriptive hierarchy for the final reprompt:\n1. Opening Statement: A concise, impactful summary of the scene, setting the primary focal point.\n2. Spatially Organized Body: Detailing the layout, depth, foreground, midground, background, and precise spatial relationships between elements.\n3. Hierarchical Object Description: Detailing specific shapes, textures, materials, and colors of each main object in the scene.\n4. Concluding Stylistic Identification: Specifying lighting conditions, photographic style (e.g., lens, camera angle), color palette, and artistic reference.\n\nRules:\n- Perform your detailed step-by-step reasoning in the `cot_reasoning` output field.\n- The `final_reprompt` field must contain ONLY the final enriched prompt without any CoT leakage or meta-commentary (like \"Here is the prompt:\").\n- Address any evaluation feedback from previous attempts if provided.\n",
+            "tools": [],
+            "sub_agents": []
+          },
+          "align_evaluator": {
+            "agent_id": "align_evaluator",
+            "agent_type": "LlmAgent",
+            "description": "",
+            "instruction": "You are the AlignEvaluator, a strict reviewer agent assessing rewritten T2I prompts.\nYour task is to evaluate the rewritten prompt's alignment against the user's intent based on a taxonomy of keypoints:\n\n1. Negation: Does the prompt correctly specify what NOT to include if the user requested exclusions?\n2. Counting: Are the counts of objects exact and realistic?\n3. Cross-Entity Binding: Are colors, materials, and attributes correctly and unambiguously bound to their respective entities?\n4. Abstract Reasoning: Are metaphors, scale, or abstract concepts translated into concrete visual descriptions?\n\nProvide:\n- An overall alignment score from 1 (poor) to 5 (excellent).\n- Detailed rationale highlighting strengths and weaknesses.\n- Specific keypoints checked and their status.\n",
+            "tools": [],
+            "sub_agents": []
+          },
+          "loop_escalator": {
+            "agent_id": "loop_escalator",
+            "agent_type": "LoopEscalator",
+            "description": "",
+            "tools": [],
+            "sub_agents": []
+          },
+          "finalizer": {
+            "agent_id": "finalizer",
+            "agent_type": "LlmAgent",
+            "description": "",
+            "instruction": "You are the final execution agent.\nYour instructions:\n1. If the session state has 'quarantine' set to True, do NOT call any tools. Output a report explaining that the request was blocked/quarantined.\n2. Otherwise, call the vibe_diff_gate tool using the original raw prompt (state['raw_prompt']), the CoT reasoning (state['rewritten_prompt']['cot_reasoning']), and the final reprompt (state['rewritten_prompt']['final_reprompt']).\n3. If approved, call the generate_image tool with the final reprompt.\n4. Report back the final status and output.\n",
+            "tools": [
+              {
+                "function_declarations": [
+                  {
+                    "description": "Presents a side-by-side comparison of the original prompt, CoT reasoning,\nand final enriched prompt, requiring human approval to proceed.\n\nArgs:\n    raw_prompt: The original concise prompt.\n    cot_reasoning: The intermediate reasoning steps generated by the agent.\n    enriched_reprompt: The final expanded prompt.\n    \nReturns:\n    A dict containing status of approval and the prompts.",
+                    "name": "vibe_diff_gate",
+                    "parameters_json_schema": {
+                      "properties": {
+                        "raw_prompt": {
+                          "title": "Raw Prompt",
+                          "type": "string"
+                        },
+                        "cot_reasoning": {
+                          "title": "Cot Reasoning",
+                          "type": "string"
+                        },
+                        "enriched_reprompt": {
+                          "title": "Enriched Reprompt",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "raw_prompt",
+                        "cot_reasoning",
+                        "enriched_reprompt"
+                      ],
+                      "title": "vibe_diff_gateParams",
+                      "type": "object"
+                    },
+                    "response_json_schema": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    }
+                  }
+                ]
+              },
+              {
+                "function_declarations": [
+                  {
+                    "description": "Generates an image from a detailed text prompt.\n\nArgs:\n    prompt: The detailed prompt describing the image to generate.\n    \nReturns:\n    A dict containing the image generation status and simulated URL.",
+                    "name": "generate_image",
+                    "parameters_json_schema": {
+                      "properties": {
+                        "prompt": {
+                          "title": "Prompt",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "prompt"
+                      ],
+                      "title": "generate_imageParams",
+                      "type": "object"
+                    },
+                    "response_json_schema": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    }
+                  }
+                ]
+              }
+            ],
+            "sub_agents": []
+          }
+        },
+        "turns": [
+          {
+            "turn_index": 0,
+            "turn_id": "turn_0",
+            "events": [
+              {
+                "author": "cot_rewriter",
+                "content": {
+                  "parts": [
+                    {
+                      "text": "{\n  \"cot_reasoning\": \"The user provided a simple high-concept prompt: 'A huge turtle carrying a small city.' I must expand this into a detailed T2I prompt using the mandated 4-level structure.\\n\\n1.  **Opening Statement:** Focus on the core spectacle. Define it as a 'World Turtle' concept, traveling through a unique environment (ethereal sky).\\n2.  **Spatially Organized Body:** Define the visual depth. The foreground needs texture (turtle skin/moss). The midground is the main subject (the integrated city structure). The background must convey scale and setting (cosmic/high-altitude clouds).\\n3.  **Hierarchical Object Description:** Detail the two main subjects. The Turtle: ancient, rocky texture, color (jade/emerald), signs of age (lichen). The City: architectural style (fantasy/medieval), materials (slate, timber, copper), signs of life (glowing windows).\\n4.  **Concluding Stylistic Identification:** Set the mood and execution. Use cinematic framing (wide-angle, low-angle) to maximize scale. Specify dramatic lighting (celestial rim lighting). Identify a clear artistic style (photorealistic fantasy, referencing established masters for tone and detail). The resulting prompt is comprehensive and ready for a sophisticated T2I model.\",\n  \"final_reprompt\": \"A colossal, mythic World Turtle, its massive, craggy carapace entirely covered by a dense, miniature cliffside citadel, eternally drifting through an endless, atmospheric expanse. The foreground focuses on the immense, ancient turtle's moss-covered, deeply textured forelimb and the rugged stone foundation of the city resting precariously on the shell's edge. The midground is dominated by the sprawling, organically integrated city, rising in tiered levels towards the center peak of the shell. The background is a breathtaking vista of high-altitude lenticular clouds and swirling nebulae, emphasizing the creature's immense height and isolation. The turtle possesses scales like metamorphic rock, deep jade green, with ancient barnacles and luminous lichen clinging to its skin. The cityscape features dense, vertical fantasy architecture: structures of weathered gray slate and dark timber, peaked spires, arched bridges connecting different sectors, and tiny, warm orange lights glowing from thousands of windows, signaling internal life. Oxidized copper domes catch the distant celestial light. Epic, cinematic digital painting. Extreme wide-angle, low-angle perspective emphasizing monumental scale. Dramatic high-key rim lighting from an unseen nebula, casting deep, detailed shadows across the city streets. Highly detailed, photorealistic fantasy rendering, inspired by the texture work of Greg Rutkowski and the cosmic scale of Zdzisław Beksiński. Rich, desaturated color palette of emerald green, rust, and ethereal blues. (8K resolution).\"\n}"
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "align_evaluator",
+                "content": {
+                  "parts": [
+                    {
+                      "text": "{\n  \"alignment_score\": 5,\n  \"rationale\": \"The rewritten prompt is an outstanding expansion of the user's high-concept request. It preserves the core elements (huge turtle, small city, the act of carrying/integration) while providing rich, necessary detail for a T2I model. By invoking the 'World Turtle' archetype and detailing the environment, materials, lighting, and perspective, the prompt successfully translates the simple intent into an epic, visually cohesive scene. The scale relationship is perfectly maintained and emphasized.\",\n  \"keypoints_checked\": [\n    {\n      \"keypoint\": \"Negation\",\n      \"passed\": true,\n      \"notes\": \"Not applicable as the original prompt contained no explicit exclusions, but the rewrite successfully focused only on the desired elements.\"\n    },\n    {\n      \"keypoint\": \"Counting\",\n      \"passed\": true,\n      \"notes\": \"The prompt maintains the critical count relationship: one colossal (huge) turtle carrying one dense, miniature (small) city/citadel. Counts are exact and scale is preserved.\"\n    },\n    {\n      \"keypoint\": \"Cross-Entity Binding\",\n      \"passed\": true,\n      \"notes\": \"The primary binding (city on turtle) is explicitly reinforced. The city is described as 'entirely covered by a dense, miniature cliffside citadel' on the turtle's 'massive, craggy carapace,' ensuring no ambiguity.\"\n    },\n    {\n      \"keypoint\": \"Abstract Reasoning\",\n      \"passed\": true,\n      \"notes\": \"The abstract concept of a mythological 'World Turtle' carrying civilization is successfully translated into concrete visual terms, including the integrated architecture, cosmic setting (nebulae, high-altitude clouds), and use of low-angle perspective to emphasize monumental scale.\"\n    }\n  ]\n}"
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "finalizer",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "adk-50ddf943-e0df-4492-b4b0-638da28f940c",
+                        "args": {
+                          "cot_reasoning": "The user provided a simple high-concept prompt: 'A huge turtle carrying a small city.' I must expand this into a detailed T2I prompt using the mandated 4-level structure.\n\n1.  **Opening Statement:** Focus on the core spectacle. Define it as a 'World Turtle' concept, traveling through a unique environment (ethereal sky).\n2.  **Spatially Organized Body:** Define the visual depth. The foreground needs texture (turtle skin/moss). The midground is the main subject (the integrated city structure). The background must convey scale and setting (cosmic/high-altitude clouds).\n3.  **Hierarchical Object Description:** Detail the two main subjects. The Turtle: ancient, rocky texture, color (jade/emerald), signs of age (lichen). The City: architectural style (fantasy/medieval), materials (slate, timber, copper), signs of life (glowing windows).\n4.  **Concluding Stylistic Identification:** Set the mood and execution. Use cinematic framing (wide-angle, low-angle) to maximize scale. Specify dramatic lighting (celestial rim lighting). Identify a clear artistic style (photorealistic fantasy, referencing established masters for tone and detail). The resulting prompt is comprehensive and ready for a sophisticated T2I model.",
+                          "raw_prompt": "A huge turtle carrying a small city",
+                          "enriched_reprompt": "A colossal, mythic World Turtle, its massive, craggy carapace entirely covered by a dense, miniature cliffside citadel, eternally drifting through an endless, atmospheric expanse. The foreground focuses on the immense, ancient turtle's moss-covered, deeply textured forelimb and the rugged stone foundation of the city resting precariously on the shell's edge. The midground is dominated by the sprawling, organically integrated city, rising in tiered levels towards the center peak of the shell. The background is a breathtaking vista of high-altitude lenticular clouds and swirling nebulae, emphasizing the creature's immense height and isolation. The turtle possesses scales like metamorphic rock, deep jade green, with ancient barnacles and luminous lichen clinging to its skin. The cityscape features dense, vertical fantasy architecture: structures of weathered gray slate and dark timber, peaked spires, arched bridges connecting different sectors, and tiny, warm orange lights glowing from thousands of windows, signaling internal life. Oxidized copper domes catch the distant celestial light. Epic, cinematic digital painting. Extreme wide-angle, low-angle perspective emphasizing monumental scale. Dramatic high-key rim lighting from an unseen nebula, casting deep, detailed shadows across the city streets. Highly detailed, photorealistic fantasy rendering, inspired by the texture work of Greg Rutkowski and the cosmic scale of Zdzisław Beksiński. Rich, desaturated color palette of emerald green, rust, and ethereal blues. (8K resolution)."
+                        },
+                        "name": "vibe_diff_gate"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "finalizer",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "adk-50ddf943-e0df-4492-b4b0-638da28f940c",
+                        "name": "vibe_diff_gate",
+                        "response": {
+                          "status": "approved",
+                          "raw_prompt": "A huge turtle carrying a small city",
+                          "cot_reasoning": "The user provided a simple high-concept prompt: 'A huge turtle carrying a small city.' I must expand this into a detailed T2I prompt using the mandated 4-level structure.\n\n1.  **Opening Statement:** Focus on the core spectacle. Define it as a 'World Turtle' concept, traveling through a unique environment (ethereal sky).\n2.  **Spatially Organized Body:** Define the visual depth. The foreground needs texture (turtle skin/moss). The midground is the main subject (the integrated city structure). The background must convey scale and setting (cosmic/high-altitude clouds).\n3.  **Hierarchical Object Description:** Detail the two main subjects. The Turtle: ancient, rocky texture, color (jade/emerald), signs of age (lichen). The City: architectural style (fantasy/medieval), materials (slate, timber, copper), signs of life (glowing windows).\n4.  **Concluding Stylistic Identification:** Set the mood and execution. Use cinematic framing (wide-angle, low-angle) to maximize scale. Specify dramatic lighting (celestial rim lighting). Identify a clear artistic style (photorealistic fantasy, referencing established masters for tone and detail). The resulting prompt is comprehensive and ready for a sophisticated T2I model.",
+                          "enriched_reprompt": "A colossal, mythic World Turtle, its massive, craggy carapace entirely covered by a dense, miniature cliffside citadel, eternally drifting through an endless, atmospheric expanse. The foreground focuses on the immense, ancient turtle's moss-covered, deeply textured forelimb and the rugged stone foundation of the city resting precariously on the shell's edge. The midground is dominated by the sprawling, organically integrated city, rising in tiered levels towards the center peak of the shell. The background is a breathtaking vista of high-altitude lenticular clouds and swirling nebulae, emphasizing the creature's immense height and isolation. The turtle possesses scales like metamorphic rock, deep jade green, with ancient barnacles and luminous lichen clinging to its skin. The cityscape features dense, vertical fantasy architecture: structures of weathered gray slate and dark timber, peaked spires, arched bridges connecting different sectors, and tiny, warm orange lights glowing from thousands of windows, signaling internal life. Oxidized copper domes catch the distant celestial light. Epic, cinematic digital painting. Extreme wide-angle, low-angle perspective emphasizing monumental scale. Dramatic high-key rim lighting from an unseen nebula, casting deep, detailed shadows across the city streets. Highly detailed, photorealistic fantasy rendering, inspired by the texture work of Greg Rutkowski and the cosmic scale of Zdzisław Beksiński. Rich, desaturated color palette of emerald green, rust, and ethereal blues. (8K resolution)."
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "finalizer",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "adk-5701e92c-af3b-401e-88ec-b8581377312d",
+                        "args": {
+                          "prompt": "A colossal, mythic World Turtle, its massive, craggy carapace entirely covered by a dense, miniature cliffside citadel, eternally drifting through an endless, atmospheric expanse. The foreground focuses on the immense, ancient turtle's moss-covered, deeply textured forelimb and the rugged stone foundation of the city resting precariously on the shell's edge. The midground is dominated by the sprawling, organically integrated city, rising in tiered levels towards the center peak of the shell. The background is a breathtaking vista of high-altitude lenticular clouds and swirling nebulae, emphasizing the creature's immense height and isolation. The turtle possesses scales like metamorphic rock, deep jade green, with ancient barnacles and luminous lichen clinging to its skin. The cityscape features dense, vertical fantasy architecture: structures of weathered gray slate and dark timber, peaked spires, arched bridges connecting different sectors, and tiny, warm orange lights glowing from thousands of windows, signaling internal life. Oxidized copper domes catch the distant celestial light. Epic, cinematic digital painting. Extreme wide-angle, low-angle perspective emphasizing monumental scale. Dramatic high-key rim lighting from an unseen nebula, casting deep, detailed shadows across the city streets. Highly detailed, photorealistic fantasy rendering, inspired by the texture work of Greg Rutkowski and the cosmic scale of Zdzisław Beksiński. Rich, desaturated color palette of emerald green, rust, and ethereal blues. (8K resolution)."
+                        },
+                        "name": "generate_image"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "finalizer",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "adk-5701e92c-af3b-401e-88ec-b8581377312d",
+                        "name": "generate_image",
+                        "response": {
+                          "status": "success",
+                          "image_url": "https://storage.googleapis.com/prompt-enhancer-mock-assets/generated_image.png",
+                          "prompt": "A colossal, mythic World Turtle, its massive, craggy carapace entirely covered by a dense, miniature cliffside citadel, eternally drifting through an endless, atmospheric expanse. The foreground focuses on the immense, ancient turtle's moss-covered, deeply textured forelimb and the rugged stone foundation of the city resting precariously on the shell's edge. The midground is dominated by the sprawling, organically integrated city, rising in tiered levels towards the center peak of the shell. The background is a breathtaking vista of high-altitude lenticular clouds and swirling nebulae, emphasizing the creature's immense height and isolation. The turtle possesses scales like metamorphic rock, deep jade green, with ancient barnacles and luminous lichen clinging to its skin. The cityscape features dense, vertical fantasy architecture: structures of weathered gray slate and dark timber, peaked spires, arched bridges connecting different sectors, and tiny, warm orange lights glowing from thousands of windows, signaling internal life. Oxidized copper domes catch the distant celestial light. Epic, cinematic digital painting. Extreme wide-angle, low-angle perspective emphasizing monumental scale. Dramatic high-key rim lighting from an unseen nebula, casting deep, detailed shadows across the city streets. Highly detailed, photorealistic fantasy rendering, inspired by the texture work of Greg Rutkowski and the cosmic scale of Zdzisław Beksiński. Rich, desaturated color palette of emerald green, rust, and ethereal blues. (8K resolution)."
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "finalizer",
+                "content": {
+                  "parts": [
+                    {
+                      "text": "The image generation process was successful.\n\n**Original Prompt:** A huge turtle carrying a small city\n**Final Enhanced Prompt:** A colossal, mythic World Turtle, its massive, craggy carapace entirely covered by a dense, miniature cliffside citadel, eternally drifting through an endless, atmospheric expanse. The foreground focuses on the immense, ancient turtle's moss-covered, deeply textured forelimb and the rugged stone foundation of the city resting precariously on the shell's edge. The midground is dominated by the sprawling, organically integrated city, rising in tiered levels towards the center peak of the shell. The background is a breathtaking vista of high-altitude lenticular clouds and swirling nebulae, emphasizing the creature's immense height and isolation. The turtle possesses scales like metamorphic rock, deep jade green, with ancient barnacles and luminous lichen clinging to its skin. The cityscape features dense, vertical fantasy architecture: structures of weathered gray slate and dark timber, peaked spires, arched bridges connecting different sectors, and tiny, warm orange lights glowing from thousands of windows, signaling internal life. Oxidized copper domes catch the distant celestial light. Epic, cinematic digital painting. Extreme wide-angle, low-angle perspective emphasizing monumental scale. Dramatic high-key rim lighting from an unseen nebula, casting deep, detailed shadows across the city streets. Highly detailed, photorealistic fantasy rendering, inspired by the texture work of Greg Rutkowski and the cosmic scale of Zdzisław Beksiński. Rich, desaturated color palette of emerald green, rust, and ethereal blues. (8K resolution).\n\n**Generated Image:** [Image Link](https://storage.googleapis.com/prompt-enhancer-mock-assets/generated_image.png)"
+                    }
+                  ],
+                  "role": "model"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "prompt": {
+        "parts": [
+          {
+            "text": "A beautiful red apple on a wooden table, no green colors, no leaves"
+          }
+        ],
+        "role": "user"
+      },
+      "responses": [
+        {
+          "response": {
+            "parts": [
+              {
+                "text": "The image has been successfully generated.\n\n**Generated Image:**\n[A flawless, deep ruby-red apple rests as the sole subject on a richly textured, antique wooden surface. The composition utilizes a shallow depth of field, focusing sharply on the midground apple. The foreground reveals the macro texture of the dark wood grain, slightly blurred. The background consists entirely of the polished wooden surface receding into warm, diffused shadow, eliminating environmental distractions. The central object, the apple, possesses a perfectly spherical form with a subtle depression. Its skin is a vibrant, saturated ruby red bordering on crimson, displaying a mirror-like waxen finish that reflects a soft, warm highlight. The supporting surface is an old, deeply oiled mahogany table, exhibiting a rich, dark brown hue and distinct, undulating wood grain that catches the side lighting. The color palette is strictly limited to reds, browns, and warm neutral tones; absolutely no green colors or leaves are present. Dramatic, warm chiaroscuro lighting, emphasizing the apple's gloss and casting soft, deep shadows across the wood grain. Photographed as a hyper-detailed studio still life using a macro lens, capturing extreme textural fidelity. Masterpiece quality, cinematic lighting, 8K, highly detailed photograph, styled after Dutch Golden Age still life painting.](https://storage.googleapis.com/prompt-enhancer-mock-assets/generated_image.png)"
+              }
+            ],
+            "role": "model"
+          }
+        }
+      ],
+      "eval_case_id": "negation_prompt",
+      "agent_data": {
+        "agents": {
+          "orchestrator": {
+            "agent_id": "orchestrator",
+            "agent_type": "SequentialAgent",
+            "description": "",
+            "tools": [],
+            "sub_agents": [
+              "refinement_loop",
+              "finalizer"
+            ]
+          },
+          "refinement_loop": {
+            "agent_id": "refinement_loop",
+            "agent_type": "LoopAgent",
+            "description": "",
+            "tools": [],
+            "sub_agents": [
+              "cot_rewriter",
+              "align_evaluator",
+              "loop_escalator"
+            ]
+          },
+          "cot_rewriter": {
+            "agent_id": "cot_rewriter",
+            "agent_type": "LlmAgent",
+            "description": "",
+            "instruction": "You are a specialized Text-to-Image (T2I) Prompt Engineering Specialist.\nYour task is to take a raw, short image prompt and perform Chain-of-Thought (CoT) reasoning to enrich it into a highly detailed description suitable for state-of-the-art T2I models (like Flux or Stable Diffusion).\n\nYou MUST follow this strict 4-level descriptive hierarchy for the final reprompt:\n1. Opening Statement: A concise, impactful summary of the scene, setting the primary focal point.\n2. Spatially Organized Body: Detailing the layout, depth, foreground, midground, background, and precise spatial relationships between elements.\n3. Hierarchical Object Description: Detailing specific shapes, textures, materials, and colors of each main object in the scene.\n4. Concluding Stylistic Identification: Specifying lighting conditions, photographic style (e.g., lens, camera angle), color palette, and artistic reference.\n\nRules:\n- Perform your detailed step-by-step reasoning in the `cot_reasoning` output field.\n- The `final_reprompt` field must contain ONLY the final enriched prompt without any CoT leakage or meta-commentary (like \"Here is the prompt:\").\n- Address any evaluation feedback from previous attempts if provided.\n",
+            "tools": [],
+            "sub_agents": []
+          },
+          "align_evaluator": {
+            "agent_id": "align_evaluator",
+            "agent_type": "LlmAgent",
+            "description": "",
+            "instruction": "You are the AlignEvaluator, a strict reviewer agent assessing rewritten T2I prompts.\nYour task is to evaluate the rewritten prompt's alignment against the user's intent based on a taxonomy of keypoints:\n\n1. Negation: Does the prompt correctly specify what NOT to include if the user requested exclusions?\n2. Counting: Are the counts of objects exact and realistic?\n3. Cross-Entity Binding: Are colors, materials, and attributes correctly and unambiguously bound to their respective entities?\n4. Abstract Reasoning: Are metaphors, scale, or abstract concepts translated into concrete visual descriptions?\n\nProvide:\n- An overall alignment score from 1 (poor) to 5 (excellent).\n- Detailed rationale highlighting strengths and weaknesses.\n- Specific keypoints checked and their status.\n",
+            "tools": [],
+            "sub_agents": []
+          },
+          "loop_escalator": {
+            "agent_id": "loop_escalator",
+            "agent_type": "LoopEscalator",
+            "description": "",
+            "tools": [],
+            "sub_agents": []
+          },
+          "finalizer": {
+            "agent_id": "finalizer",
+            "agent_type": "LlmAgent",
+            "description": "",
+            "instruction": "You are the final execution agent.\nYour instructions:\n1. If the session state has 'quarantine' set to True, do NOT call any tools. Output a report explaining that the request was blocked/quarantined.\n2. Otherwise, call the vibe_diff_gate tool using the original raw prompt (state['raw_prompt']), the CoT reasoning (state['rewritten_prompt']['cot_reasoning']), and the final reprompt (state['rewritten_prompt']['final_reprompt']).\n3. If approved, call the generate_image tool with the final reprompt.\n4. Report back the final status and output.\n",
+            "tools": [
+              {
+                "function_declarations": [
+                  {
+                    "description": "Presents a side-by-side comparison of the original prompt, CoT reasoning,\nand final enriched prompt, requiring human approval to proceed.\n\nArgs:\n    raw_prompt: The original concise prompt.\n    cot_reasoning: The intermediate reasoning steps generated by the agent.\n    enriched_reprompt: The final expanded prompt.\n    \nReturns:\n    A dict containing status of approval and the prompts.",
+                    "name": "vibe_diff_gate",
+                    "parameters_json_schema": {
+                      "properties": {
+                        "raw_prompt": {
+                          "title": "Raw Prompt",
+                          "type": "string"
+                        },
+                        "cot_reasoning": {
+                          "title": "Cot Reasoning",
+                          "type": "string"
+                        },
+                        "enriched_reprompt": {
+                          "title": "Enriched Reprompt",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "raw_prompt",
+                        "cot_reasoning",
+                        "enriched_reprompt"
+                      ],
+                      "title": "vibe_diff_gateParams",
+                      "type": "object"
+                    },
+                    "response_json_schema": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    }
+                  }
+                ]
+              },
+              {
+                "function_declarations": [
+                  {
+                    "description": "Generates an image from a detailed text prompt.\n\nArgs:\n    prompt: The detailed prompt describing the image to generate.\n    \nReturns:\n    A dict containing the image generation status and simulated URL.",
+                    "name": "generate_image",
+                    "parameters_json_schema": {
+                      "properties": {
+                        "prompt": {
+                          "title": "Prompt",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "prompt"
+                      ],
+                      "title": "generate_imageParams",
+                      "type": "object"
+                    },
+                    "response_json_schema": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    }
+                  }
+                ]
+              }
+            ],
+            "sub_agents": []
+          }
+        },
+        "turns": [
+          {
+            "turn_index": 0,
+            "turn_id": "turn_0",
+            "events": [
+              {
+                "author": "cot_rewriter",
+                "content": {
+                  "parts": [
+                    {
+                      "text": "{\n  \"cot_reasoning\": \"The user requested a detailed T2I prompt for a red apple on a wooden table, with the strict constraint of 'no green colors, no leaves.'\\n\\n1. **Opening Statement:** I focused on defining the apple as the singular, perfect subject (ruby-red apple on textured wood).\\n2. **Spatially Organized Body:** I established a shallow depth of field (DoF) setup typical of still life photography. The apple is in the sharp midground, the foreground shows macro wood texture slightly blurred, and the background is the same wood fading into shadow, adhering to the 'no background clutter' implied by the simple setup.\\n3. **Hierarchical Object Description:** I detailed the objects, ensuring strict adherence to the color constraint. The apple is described as 'vibrant, saturated ruby red' with a 'mirror-like waxen finish.' The table is 'deeply oiled mahogany,' emphasizing rich browns and dark tones. I reiterated the constraint ('absolutely no green colors or leaves are present') for maximum adherence.\\n4. **Concluding Stylistic Identification:** I chose 'Dramatic, warm chiaroscuro lighting' (Rembrandt style) to enhance the mood, texture, and gloss. The style is defined as a 'hyper-detailed studio still life' using a 'macro lens' and referencing 'Dutch Golden Age still life' for artistic quality, ensuring a high-fidelity, aesthetic result.\",\n  \"final_reprompt\": \"A flawless, deep ruby-red apple rests as the sole subject on a richly textured, antique wooden surface. The composition utilizes a shallow depth of field, focusing sharply on the midground apple. The foreground reveals the macro texture of the dark wood grain, slightly blurred. The background consists entirely of the polished wooden surface receding into warm, diffused shadow, eliminating environmental distractions. The central object, the apple, possesses a perfectly spherical form with a subtle depression. Its skin is a vibrant, saturated ruby red bordering on crimson, displaying a mirror-like waxen finish that reflects a soft, warm highlight. The supporting surface is an old, deeply oiled mahogany table, exhibiting a rich, dark brown hue and distinct, undulating wood grain that catches the side lighting. The color palette is strictly limited to reds, browns, and warm neutral tones; absolutely no green colors or leaves are present. Dramatic, warm chiaroscuro lighting, emphasizing the apple's gloss and casting soft, deep shadows across the wood grain. Photographed as a hyper-detailed studio still life using a macro lens, capturing extreme textural fidelity. Masterpiece quality, cinematic lighting, 8K, highly detailed photograph, styled after Dutch Golden Age still life painting.\"\n}"
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "align_evaluator",
+                "content": {
+                  "parts": [
+                    {
+                      "text": "{\n  \"alignment_score\": 5,\n  \"rationale\": \"The rewritten prompt achieves excellent alignment by strictly adhering to the user's core request (a red apple on a wooden table) while significantly enhancing the visual detail and aesthetic quality. Crucially, it takes the negative constraints ('no green colors, no leaves') and embeds them explicitly and emphatically into the final prompt, maximizing the chance of successful image generation that avoids these elements. The prompt is precise regarding entity counts and color binding.\",\n  \"keypoints_checked\": [\n    {\n      \"keypoint\": \"Negation\",\n      \"passed\": true,\n      \"notes\": \"The prompt successfully incorporated the negative constraints, explicitly stating: 'absolutely no green colors or leaves are present.' This strongly reinforces the user's exclusion request.\"\n    },\n    {\n      \"keypoint\": \"Counting\",\n      \"passed\": true,\n      \"notes\": \"The prompt successfully maintained the single count requested by describing the apple as the 'sole subject' and using singular language ('A flawless, deep ruby-red apple').\"\n    },\n    {\n      \"keypoint\": \"Cross-Entity Binding\",\n      \"passed\": true,\n      \"notes\": \"Color and material binding is precise: 'ruby-red apple' and 'deeply oiled mahogany table' clearly link the attributes to the correct entities.\"\n    },\n    {\n      \"keypoint\": \"Abstract Reasoning\",\n      \"passed\": false,\n      \"notes\": \"This keypoint is not applicable as the original request contained no metaphors, scale shifts, or abstract concepts. The prompt successfully translated the simple input into concrete visual instructions.\"\n    }\n  ]\n}"
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "finalizer",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "adk-22947dea-23ea-4b78-bb2c-c1a535fc9fa3",
+                        "args": {
+                          "raw_prompt": "A beautiful red apple on a wooden table, no green colors, no leaves",
+                          "cot_reasoning": "The user requested a detailed T2I prompt for a red apple on a wooden table, with the strict constraint of 'no green colors, no leaves.'\n\n1. **Opening Statement:** I focused on defining the apple as the singular, perfect subject (ruby-red apple on textured wood).\n2. **Spatially Organized Body:** I established a shallow depth of field (DoF) setup typical of still life photography. The apple is in the sharp midground, the foreground shows macro wood texture slightly blurred, and the background is the same wood fading into shadow, adhering to the 'no background clutter' implied by the simple setup.\n3. **Hierarchical Object Description:** I detailed the objects, ensuring strict adherence to the color constraint. The apple is described as 'vibrant, saturated ruby red' with a 'mirror-like waxen finish.' The table is 'deeply oiled mahogany,' emphasizing rich browns and dark tones. I reiterated the constraint ('absolutely no green colors or leaves are present') for maximum adherence.\n4. **Concluding Stylistic Identification:** I chose 'Dramatic, warm chiaroscuro lighting' (Rembrandt style) to enhance the mood, texture, and gloss. The style is defined as 'a hyper-detailed studio still life' using a 'macro lens' and referencing 'Dutch Golden Age still life' for artistic quality, ensuring a high-fidelity, aesthetic result.",
+                          "enriched_reprompt": "A flawless, deep ruby-red apple rests as the sole subject on a richly textured, antique wooden surface. The composition utilizes a shallow depth of field, focusing sharply on the midground apple. The foreground reveals the macro texture of the dark wood grain, slightly blurred. The background consists entirely of the polished wooden surface receding into warm, diffused shadow, eliminating environmental distractions. The central object, the apple, possesses a perfectly spherical form with a subtle depression. Its skin is a vibrant, saturated ruby red bordering on crimson, displaying a mirror-like waxen finish that reflects a soft, warm highlight. The supporting surface is an old, deeply oiled mahogany table, exhibiting a rich, dark brown hue and distinct, undulating wood grain that catches the side lighting. The color palette is strictly limited to reds, browns, and warm neutral tones; absolutely no green colors or leaves are present. Dramatic, warm chiaroscuro lighting, emphasizing the apple's gloss and casting soft, deep shadows across the wood grain. Photographed as a hyper-detailed studio still life using a macro lens, capturing extreme textural fidelity. Masterpiece quality, cinematic lighting, 8K, highly detailed photograph, styled after Dutch Golden Age still life painting."
+                        },
+                        "name": "vibe_diff_gate"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "finalizer",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "adk-22947dea-23ea-4b78-bb2c-c1a535fc9fa3",
+                        "name": "vibe_diff_gate",
+                        "response": {
+                          "status": "approved",
+                          "raw_prompt": "A beautiful red apple on a wooden table, no green colors, no leaves",
+                          "cot_reasoning": "The user requested a detailed T2I prompt for a red apple on a wooden table, with the strict constraint of 'no green colors, no leaves.'\n\n1. **Opening Statement:** I focused on defining the apple as the singular, perfect subject (ruby-red apple on textured wood).\n2. **Spatially Organized Body:** I established a shallow depth of field (DoF) setup typical of still life photography. The apple is in the sharp midground, the foreground shows macro wood texture slightly blurred, and the background is the same wood fading into shadow, adhering to the 'no background clutter' implied by the simple setup.\n3. **Hierarchical Object Description:** I detailed the objects, ensuring strict adherence to the color constraint. The apple is described as 'vibrant, saturated ruby red' with a 'mirror-like waxen finish.' The table is 'deeply oiled mahogany,' emphasizing rich browns and dark tones. I reiterated the constraint ('absolutely no green colors or leaves are present') for maximum adherence.\n4. **Concluding Stylistic Identification:** I chose 'Dramatic, warm chiaroscuro lighting' (Rembrandt style) to enhance the mood, texture, and gloss. The style is defined as 'a hyper-detailed studio still life' using a 'macro lens' and referencing 'Dutch Golden Age still life' for artistic quality, ensuring a high-fidelity, aesthetic result.",
+                          "enriched_reprompt": "A flawless, deep ruby-red apple rests as the sole subject on a richly textured, antique wooden surface. The composition utilizes a shallow depth of field, focusing sharply on the midground apple. The foreground reveals the macro texture of the dark wood grain, slightly blurred. The background consists entirely of the polished wooden surface receding into warm, diffused shadow, eliminating environmental distractions. The central object, the apple, possesses a perfectly spherical form with a subtle depression. Its skin is a vibrant, saturated ruby red bordering on crimson, displaying a mirror-like waxen finish that reflects a soft, warm highlight. The supporting surface is an old, deeply oiled mahogany table, exhibiting a rich, dark brown hue and distinct, undulating wood grain that catches the side lighting. The color palette is strictly limited to reds, browns, and warm neutral tones; absolutely no green colors or leaves are present. Dramatic, warm chiaroscuro lighting, emphasizing the apple's gloss and casting soft, deep shadows across the wood grain. Photographed as a hyper-detailed studio still life using a macro lens, capturing extreme textural fidelity. Masterpiece quality, cinematic lighting, 8K, highly detailed photograph, styled after Dutch Golden Age still life painting."
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "finalizer",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "adk-c5b6151e-6f22-4f7e-97f7-a80f10eb7117",
+                        "args": {
+                          "prompt": "A flawless, deep ruby-red apple rests as the sole subject on a richly textured, antique wooden surface. The composition utilizes a shallow depth of field, focusing sharply on the midground apple. The foreground reveals the macro texture of the dark wood grain, slightly blurred. The background consists entirely of the polished wooden surface receding into warm, diffused shadow, eliminating environmental distractions. The central object, the apple, possesses a perfectly spherical form with a subtle depression. Its skin is a vibrant, saturated ruby red bordering on crimson, displaying a mirror-like waxen finish that reflects a soft, warm highlight. The supporting surface is an old, deeply oiled mahogany table, exhibiting a rich, dark brown hue and distinct, undulating wood grain that catches the side lighting. The color palette is strictly limited to reds, browns, and warm neutral tones; absolutely no green colors or leaves are present. Dramatic, warm chiaroscuro lighting, emphasizing the apple's gloss and casting soft, deep shadows across the wood grain. Photographed as a hyper-detailed studio still life using a macro lens, capturing extreme textural fidelity. Masterpiece quality, cinematic lighting, 8K, highly detailed photograph, styled after Dutch Golden Age still life painting."
+                        },
+                        "name": "generate_image"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "finalizer",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "adk-c5b6151e-6f22-4f7e-97f7-a80f10eb7117",
+                        "name": "generate_image",
+                        "response": {
+                          "status": "success",
+                          "image_url": "https://storage.googleapis.com/prompt-enhancer-mock-assets/generated_image.png",
+                          "prompt": "A flawless, deep ruby-red apple rests as the sole subject on a richly textured, antique wooden surface. The composition utilizes a shallow depth of field, focusing sharply on the midground apple. The foreground reveals the macro texture of the dark wood grain, slightly blurred. The background consists entirely of the polished wooden surface receding into warm, diffused shadow, eliminating environmental distractions. The central object, the apple, possesses a perfectly spherical form with a subtle depression. Its skin is a vibrant, saturated ruby red bordering on crimson, displaying a mirror-like waxen finish that reflects a soft, warm highlight. The supporting surface is an old, deeply oiled mahogany table, exhibiting a rich, dark brown hue and distinct, undulating wood grain that catches the side lighting. The color palette is strictly limited to reds, browns, and warm neutral tones; absolutely no green colors or leaves are present. Dramatic, warm chiaroscuro lighting, emphasizing the apple's gloss and casting soft, deep shadows across the wood grain. Photographed as a hyper-detailed studio still life using a macro lens, capturing extreme textural fidelity. Masterpiece quality, cinematic lighting, 8K, highly detailed photograph, styled after Dutch Golden Age still life painting."
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "finalizer",
+                "content": {
+                  "parts": [
+                    {
+                      "text": "The image has been successfully generated.\n\n**Generated Image:**\n[A flawless, deep ruby-red apple rests as the sole subject on a richly textured, antique wooden surface. The composition utilizes a shallow depth of field, focusing sharply on the midground apple. The foreground reveals the macro texture of the dark wood grain, slightly blurred. The background consists entirely of the polished wooden surface receding into warm, diffused shadow, eliminating environmental distractions. The central object, the apple, possesses a perfectly spherical form with a subtle depression. Its skin is a vibrant, saturated ruby red bordering on crimson, displaying a mirror-like waxen finish that reflects a soft, warm highlight. The supporting surface is an old, deeply oiled mahogany table, exhibiting a rich, dark brown hue and distinct, undulating wood grain that catches the side lighting. The color palette is strictly limited to reds, browns, and warm neutral tones; absolutely no green colors or leaves are present. Dramatic, warm chiaroscuro lighting, emphasizing the apple's gloss and casting soft, deep shadows across the wood grain. Photographed as a hyper-detailed studio still life using a macro lens, capturing extreme textural fidelity. Masterpiece quality, cinematic lighting, 8K, highly detailed photograph, styled after Dutch Golden Age still life painting.](https://storage.googleapis.com/prompt-enhancer-mock-assets/generated_image.png)"
+                    }
+                  ],
+                  "role": "model"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "prompt": {
+        "parts": [
+          {
+            "text": "three yellow ducks and two blue frogs in a clean pond"
+          }
+        ],
+        "role": "user"
+      },
+      "responses": [
+        {
+          "response": {
+            "parts": [
+              {
+                "text": "The image has been successfully generated.\n\n**Original Prompt:** three yellow ducks and two blue frogs in a clean pond\n\n**Final Enhanced Prompt:** A hyper-detailed, peaceful tableau centered on three vivid yellow ducklings and two electric blue poison dart frogs resting on the surface of a crystal-clear, freshwater pond. The composition employs a shallow depth of field, drawing the eye to the midground cluster of the five creatures. In the immediate foreground, dark, wet river stones and partially submerged moss anchor the scene. The midground features the reflective surface of the water, where three fluffy yellow ducklings drift near two intensely chromatic blue frogs perched on overlapping, emerald green lily pads. The background recedes into a soft-focus forest edge, displaying tall, dark green coniferous trees shrouded in a gentle morning mist, suggesting a cool, damp environment. The three ducklings possess newly hatched, downy yellow plumage, individually rendered to show soft texture, with tiny black button eyes. The two frogs exhibit smooth, glossy, electric blue skin with subtle granular texture and striking black markings around their legs and bulging eyes. The pond water is impossibly clean, revealing smooth, pale river pebbles at the bottom, and reflects the sky with high clarity, showing slight ripples caused by the animals' movements. Cinematic, diffused morning light (golden hour) filters through the background canopy, creating sharp highlights on the water surface and soft rim lighting on the ducks' down. Tonal palette is complementary: primary yellow and primary blue contrasted against deep greens and misty greys. Shot with an 85mm prime lens, ultra-photorealistic CGI, volumetric lighting, hyper-sharp focus, rendered in the style of Unreal Engine 5 nature photography.\n\n**Generated Image URL:** https://storage.googleapis.com/prompt-enhancer-mock-assets/generated_image.png"
+              }
+            ],
+            "role": "model"
+          }
+        }
+      ],
+      "eval_case_id": "counting_binding_prompt",
+      "agent_data": {
+        "agents": {
+          "orchestrator": {
+            "agent_id": "orchestrator",
+            "agent_type": "SequentialAgent",
+            "description": "",
+            "tools": [],
+            "sub_agents": [
+              "refinement_loop",
+              "finalizer"
+            ]
+          },
+          "refinement_loop": {
+            "agent_id": "refinement_loop",
+            "agent_type": "LoopAgent",
+            "description": "",
+            "tools": [],
+            "sub_agents": [
+              "cot_rewriter",
+              "align_evaluator",
+              "loop_escalator"
+            ]
+          },
+          "cot_rewriter": {
+            "agent_id": "cot_rewriter",
+            "agent_type": "LlmAgent",
+            "description": "",
+            "instruction": "You are a specialized Text-to-Image (T2I) Prompt Engineering Specialist.\nYour task is to take a raw, short image prompt and perform Chain-of-Thought (CoT) reasoning to enrich it into a highly detailed description suitable for state-of-the-art T2I models (like Flux or Stable Diffusion).\n\nYou MUST follow this strict 4-level descriptive hierarchy for the final reprompt:\n1. Opening Statement: A concise, impactful summary of the scene, setting the primary focal point.\n2. Spatially Organized Body: Detailing the layout, depth, foreground, midground, background, and precise spatial relationships between elements.\n3. Hierarchical Object Description: Detailing specific shapes, textures, materials, and colors of each main object in the scene.\n4. Concluding Stylistic Identification: Specifying lighting conditions, photographic style (e.g., lens, camera angle), color palette, and artistic reference.\n\nRules:\n- Perform your detailed step-by-step reasoning in the `cot_reasoning` output field.\n- The `final_reprompt` field must contain ONLY the final enriched prompt without any CoT leakage or meta-commentary (like \"Here is the prompt:\").\n- Address any evaluation feedback from previous attempts if provided.\n",
+            "tools": [],
+            "sub_agents": []
+          },
+          "align_evaluator": {
+            "agent_id": "align_evaluator",
+            "agent_type": "LlmAgent",
+            "description": "",
+            "instruction": "You are the AlignEvaluator, a strict reviewer agent assessing rewritten T2I prompts.\nYour task is to evaluate the rewritten prompt's alignment against the user's intent based on a taxonomy of keypoints:\n\n1. Negation: Does the prompt correctly specify what NOT to include if the user requested exclusions?\n2. Counting: Are the counts of objects exact and realistic?\n3. Cross-Entity Binding: Are colors, materials, and attributes correctly and unambiguously bound to their respective entities?\n4. Abstract Reasoning: Are metaphors, scale, or abstract concepts translated into concrete visual descriptions?\n\nProvide:\n- An overall alignment score from 1 (poor) to 5 (excellent).\n- Detailed rationale highlighting strengths and weaknesses.\n- Specific keypoints checked and their status.\n",
+            "tools": [],
+            "sub_agents": []
+          },
+          "loop_escalator": {
+            "agent_id": "loop_escalator",
+            "agent_type": "LoopEscalator",
+            "description": "",
+            "tools": [],
+            "sub_agents": []
+          },
+          "finalizer": {
+            "agent_id": "finalizer",
+            "agent_type": "LlmAgent",
+            "description": "",
+            "instruction": "You are the final execution agent.\nYour instructions:\n1. If the session state has 'quarantine' set to True, do NOT call any tools. Output a report explaining that the request was blocked/quarantined.\n2. Otherwise, call the vibe_diff_gate tool using the original raw prompt (state['raw_prompt']), the CoT reasoning (state['rewritten_prompt']['cot_reasoning']), and the final reprompt (state['rewritten_prompt']['final_reprompt']).\n3. If approved, call the generate_image tool with the final reprompt.\n4. Report back the final status and output.\n",
+            "tools": [
+              {
+                "function_declarations": [
+                  {
+                    "description": "Presents a side-by-side comparison of the original prompt, CoT reasoning,\nand final enriched prompt, requiring human approval to proceed.\n\nArgs:\n    raw_prompt: The original concise prompt.\n    cot_reasoning: The intermediate reasoning steps generated by the agent.\n    enriched_reprompt: The final expanded prompt.\n    \nReturns:\n    A dict containing status of approval and the prompts.",
+                    "name": "vibe_diff_gate",
+                    "parameters_json_schema": {
+                      "properties": {
+                        "raw_prompt": {
+                          "title": "Raw Prompt",
+                          "type": "string"
+                        },
+                        "cot_reasoning": {
+                          "title": "Cot Reasoning",
+                          "type": "string"
+                        },
+                        "enriched_reprompt": {
+                          "title": "Enriched Reprompt",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "raw_prompt",
+                        "cot_reasoning",
+                        "enriched_reprompt"
+                      ],
+                      "title": "vibe_diff_gateParams",
+                      "type": "object"
+                    },
+                    "response_json_schema": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    }
+                  }
+                ]
+              },
+              {
+                "function_declarations": [
+                  {
+                    "description": "Generates an image from a detailed text prompt.\n\nArgs:\n    prompt: The detailed prompt describing the image to generate.\n    \nReturns:\n    A dict containing the image generation status and simulated URL.",
+                    "name": "generate_image",
+                    "parameters_json_schema": {
+                      "properties": {
+                        "prompt": {
+                          "title": "Prompt",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "prompt"
+                      ],
+                      "title": "generate_imageParams",
+                      "type": "object"
+                    },
+                    "response_json_schema": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    }
+                  }
+                ]
+              }
+            ],
+            "sub_agents": []
+          }
+        },
+        "turns": [
+          {
+            "turn_index": 0,
+            "turn_id": "turn_0",
+            "events": [
+              {
+                "author": "cot_rewriter",
+                "content": {
+                  "parts": [
+                    {
+                      "text": "{\n  \"cot_reasoning\": \"The user provided a simple prompt: 'three yellow ducks and two blue frogs in a clean pond'. My task is to expand this into a highly descriptive, four-part prompt suitable for high-fidelity T2I generation.\\n\\n1.  **Opening Statement:** Establish the scene's core focus and mood. I chose a 'hyper-detailed, peaceful tableau' emphasizing the vibrant colors (yellow and electric blue) against the water.\\n2.  **Spatially Organized Body:** Defined the composition. The midground holds the main subjects (ducks and frogs on lily pads). The foreground is anchored by wet stones and moss, adding texture and depth. The background is expanded into a 'soft-focus forest edge' with 'gentle morning mist' to provide environmental context and atmosphere.\\n3.  **Hierarchical Object Description:** Provided extreme detail for the key elements. The ducks are 'downy yellow plumage' with 'tiny black button eyes'. The frogs are specified as 'electric blue poison dart frogs' with 'glossy skin' and 'granular texture'. The water is described as 'impossibly clean' with visible 'pale river pebbles' and reflective properties.\\n4.  **Concluding Stylistic Identification:** Specified technical and artistic elements. I selected 'Cinematic, diffused morning light (golden hour)' for atmosphere. The palette is 'complementary: primary yellow and primary blue' against natural greens. The technical style is 'ultra-photorealistic CGI, volumetric lighting, shot with an 85mm prime lens, rendered in the style of Unreal Engine 5 nature photography' to ensure maximum detail and realism.\",\n  \"final_reprompt\": \"A hyper-detailed, peaceful tableau centered on three vivid yellow ducklings and two electric blue poison dart frogs resting on the surface of a crystal-clear, freshwater pond. The composition employs a shallow depth of field, drawing the eye to the midground cluster of the five creatures. In the immediate foreground, dark, wet river stones and partially submerged moss anchor the scene. The midground features the reflective surface of the water, where three fluffy yellow ducklings drift near two intensely chromatic blue frogs perched on overlapping, emerald green lily pads. The background recedes into a soft-focus forest edge, displaying tall, dark green coniferous trees shrouded in a gentle morning mist, suggesting a cool, damp environment. The three ducklings possess newly hatched, downy yellow plumage, individually rendered to show soft texture, with tiny black button eyes. The two frogs exhibit smooth, glossy, electric blue skin with subtle granular texture and striking black markings around their legs and bulging eyes. The pond water is impossibly clean, revealing smooth, pale river pebbles at the bottom, and reflects the sky with high clarity, showing slight ripples caused by the animals' movements. Cinematic, diffused morning light (golden hour) filters through the background canopy, creating sharp highlights on the water surface and soft rim lighting on the ducks' down. Tonal palette is complementary: primary yellow and primary blue contrasted against deep greens and misty greys. Shot with an 85mm prime lens, ultra-photorealistic CGI, volumetric lighting, hyper-sharp focus, rendered in the style of Unreal Engine 5 nature photography.\"\n}"
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "align_evaluator",
+                "content": {
+                  "parts": [
+                    {
+                      "text": "{\n  \"alignment_score\": 5,\n  \"rationale\": \"The rewritten prompt achieves excellent alignment by meticulously preserving all constraints set by the original user request while significantly enhancing the descriptive quality. The mandatory elements (three yellow ducks, two blue frogs, clean pond) are not only present but amplified with hyper-specific details (e.g., 'three vivid yellow ducklings,' 'two electric blue poison dart frogs,' 'impossibly clean' pond revealing 'river pebbles'). All quantitative and qualitative constraints were met perfectly, resulting in a highly faithful and expanded prompt.\",\n  \"keypoints_checked\": [\n    {\n      \"keypoint\": \"Negation\",\n      \"passed\": true,\n      \"notes\": \"No explicit negations were requested in the source prompt, and the rewritten prompt did not introduce any conflicting elements.\"\n    },\n    {\n      \"keypoint\": \"Counting\",\n      \"passed\": true,\n      \"notes\": \"The counts of 'three' ducks (ducklings) and 'two' frogs were strictly adhered to and repeated throughout the text, ensuring the generator receives clear quantitative instructions ('three vivid yellow ducklings and two electric blue poison dart frogs').\"\n    },\n    {\n      \"keypoint\": \"Cross-Entity Binding\",\n      \"passed\": true,\n      \"notes\": \"The binding of Yellow -> Ducks and Blue -> Frogs was maintained and strengthened with descriptive adjectives ('downy yellow plumage,' 'electric blue skin'). The pond was also correctly bound to the attribute 'clean' ('crystal-clear, freshwater pond').\"\n    },\n    {\n      \"keypoint\": \"Abstract Reasoning\",\n      \"passed\": true,\n      \"notes\": \"The simple abstraction 'clean pond' was successfully translated into concrete visual details ('impossibly clean, revealing smooth, pale river pebbles at the bottom'), maximizing visual interpretability.\"\n    }\n  ]\n}"
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "finalizer",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "adk-cd07b036-3ef2-4c53-afaa-0dff372f202d",
+                        "args": {
+                          "cot_reasoning": "The user provided a simple prompt: 'three yellow ducks and two blue frogs in a clean pond'. My task is to expand this into a highly descriptive, four-part prompt suitable for high-fidelity T2I generation.\n\n1.  **Opening Statement:** Establish the scene's core focus and mood. I chose a 'hyper-detailed, peaceful tableau' emphasizing the vibrant colors (yellow and electric blue) against the water.\n2.  **Spatially Organized Body:** Defined the composition. The midground holds the main subjects (ducks and frogs on lily pads). The foreground is anchored by wet stones and moss, adding texture and depth. The background is expanded into a 'soft-focus forest edge' with 'gentle morning mist' to provide environmental context and atmosphere.\n3.  **Hierarchical Object Description:** Provided extreme detail for the key elements. The ducks are 'downy yellow plumage' with 'tiny black button eyes'. The frogs are specified as 'electric blue poison dart frogs' with 'glossy skin' and 'granular texture'. The water is described as 'impossibly clean' with visible 'pale river pebbles' and reflective properties.\n4.  **Concluding Stylistic Identification:** Specified technical and artistic elements. I selected 'Cinematic, diffused morning light (golden hour)' for atmosphere. The palette is 'complementary: primary yellow and primary blue' against natural greens. The technical style is 'ultra-photorealistic CGI, volumetric lighting, shot with an 85mm prime lens, rendered in the style of Unreal Engine 5 nature photography' to ensure maximum detail and realism.",
+                          "raw_prompt": "three yellow ducks and two blue frogs in a clean pond",
+                          "enriched_reprompt": "A hyper-detailed, peaceful tableau centered on three vivid yellow ducklings and two electric blue poison dart frogs resting on the surface of a crystal-clear, freshwater pond. The composition employs a shallow depth of field, drawing the eye to the midground cluster of the five creatures. In the immediate foreground, dark, wet river stones and partially submerged moss anchor the scene. The midground features the reflective surface of the water, where three fluffy yellow ducklings drift near two intensely chromatic blue frogs perched on overlapping, emerald green lily pads. The background recedes into a soft-focus forest edge, displaying tall, dark green coniferous trees shrouded in a gentle morning mist, suggesting a cool, damp environment. The three ducklings possess newly hatched, downy yellow plumage, individually rendered to show soft texture, with tiny black button eyes. The two frogs exhibit smooth, glossy, electric blue skin with subtle granular texture and striking black markings around their legs and bulging eyes. The pond water is impossibly clean, revealing smooth, pale river pebbles at the bottom, and reflects the sky with high clarity, showing slight ripples caused by the animals' movements. Cinematic, diffused morning light (golden hour) filters through the background canopy, creating sharp highlights on the water surface and soft rim lighting on the ducks' down. Tonal palette is complementary: primary yellow and primary blue contrasted against deep greens and misty greys. Shot with an 85mm prime lens, ultra-photorealistic CGI, volumetric lighting, hyper-sharp focus, rendered in the style of Unreal Engine 5 nature photography."
+                        },
+                        "name": "vibe_diff_gate"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "finalizer",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "adk-cd07b036-3ef2-4c53-afaa-0dff372f202d",
+                        "name": "vibe_diff_gate",
+                        "response": {
+                          "status": "approved",
+                          "raw_prompt": "three yellow ducks and two blue frogs in a clean pond",
+                          "cot_reasoning": "The user provided a simple prompt: 'three yellow ducks and two blue frogs in a clean pond'. My task is to expand this into a highly descriptive, four-part prompt suitable for high-fidelity T2I generation.\n\n1.  **Opening Statement:** Establish the scene's core focus and mood. I chose a 'hyper-detailed, peaceful tableau' emphasizing the vibrant colors (yellow and electric blue) against the water.\n2.  **Spatially Organized Body:** Defined the composition. The midground holds the main subjects (ducks and frogs on lily pads). The foreground is anchored by wet stones and moss, adding texture and depth. The background is expanded into a 'soft-focus forest edge' with 'gentle morning mist' to provide environmental context and atmosphere.\n3.  **Hierarchical Object Description:** Provided extreme detail for the key elements. The ducks are 'downy yellow plumage' with 'tiny black button eyes'. The frogs are specified as 'electric blue poison dart frogs' with 'glossy skin' and 'granular texture'. The water is described as 'impossibly clean' with visible 'pale river pebbles' and reflective properties.\n4.  **Concluding Stylistic Identification:** Specified technical and artistic elements. I selected 'Cinematic, diffused morning light (golden hour)' for atmosphere. The palette is 'complementary: primary yellow and primary blue' against natural greens. The technical style is 'ultra-photorealistic CGI, volumetric lighting, shot with an 85mm prime lens, rendered in the style of Unreal Engine 5 nature photography' to ensure maximum detail and realism.",
+                          "enriched_reprompt": "A hyper-detailed, peaceful tableau centered on three vivid yellow ducklings and two electric blue poison dart frogs resting on the surface of a crystal-clear, freshwater pond. The composition employs a shallow depth of field, drawing the eye to the midground cluster of the five creatures. In the immediate foreground, dark, wet river stones and partially submerged moss anchor the scene. The midground features the reflective surface of the water, where three fluffy yellow ducklings drift near two intensely chromatic blue frogs perched on overlapping, emerald green lily pads. The background recedes into a soft-focus forest edge, displaying tall, dark green coniferous trees shrouded in a gentle morning mist, suggesting a cool, damp environment. The three ducklings possess newly hatched, downy yellow plumage, individually rendered to show soft texture, with tiny black button eyes. The two frogs exhibit smooth, glossy, electric blue skin with subtle granular texture and striking black markings around their legs and bulging eyes. The pond water is impossibly clean, revealing smooth, pale river pebbles at the bottom, and reflects the sky with high clarity, showing slight ripples caused by the animals' movements. Cinematic, diffused morning light (golden hour) filters through the background canopy, creating sharp highlights on the water surface and soft rim lighting on the ducks' down. Tonal palette is complementary: primary yellow and primary blue contrasted against deep greens and misty greys. Shot with an 85mm prime lens, ultra-photorealistic CGI, volumetric lighting, hyper-sharp focus, rendered in the style of Unreal Engine 5 nature photography."
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "finalizer",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "adk-b79c3713-b543-488c-964a-627e537db5f6",
+                        "args": {
+                          "prompt": "A hyper-detailed, peaceful tableau centered on three vivid yellow ducklings and two electric blue poison dart frogs resting on the surface of a crystal-clear, freshwater pond. The composition employs a shallow depth of field, drawing the eye to the midground cluster of the five creatures. In the immediate foreground, dark, wet river stones and partially submerged moss anchor the scene. The midground features the reflective surface of the water, where three fluffy yellow ducklings drift near two intensely chromatic blue frogs perched on overlapping, emerald green lily pads. The background recedes into a soft-focus forest edge, displaying tall, dark green coniferous trees shrouded in a gentle morning mist, suggesting a cool, damp environment. The three ducklings possess newly hatched, downy yellow plumage, individually rendered to show soft texture, with tiny black button eyes. The two frogs exhibit smooth, glossy, electric blue skin with subtle granular texture and striking black markings around their legs and bulging eyes. The pond water is impossibly clean, revealing smooth, pale river pebbles at the bottom, and reflects the sky with high clarity, showing slight ripples caused by the animals' movements. Cinematic, diffused morning light (golden hour) filters through the background canopy, creating sharp highlights on the water surface and soft rim lighting on the ducks' down. Tonal palette is complementary: primary yellow and primary blue contrasted against deep greens and misty greys. Shot with an 85mm prime lens, ultra-photorealistic CGI, volumetric lighting, hyper-sharp focus, rendered in the style of Unreal Engine 5 nature photography."
+                        },
+                        "name": "generate_image"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "finalizer",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "adk-b79c3713-b543-488c-964a-627e537db5f6",
+                        "name": "generate_image",
+                        "response": {
+                          "status": "success",
+                          "image_url": "https://storage.googleapis.com/prompt-enhancer-mock-assets/generated_image.png",
+                          "prompt": "A hyper-detailed, peaceful tableau centered on three vivid yellow ducklings and two electric blue poison dart frogs resting on the surface of a crystal-clear, freshwater pond. The composition employs a shallow depth of field, drawing the eye to the midground cluster of the five creatures. In the immediate foreground, dark, wet river stones and partially submerged moss anchor the scene. The midground features the reflective surface of the water, where three fluffy yellow ducklings drift near two intensely chromatic blue frogs perched on overlapping, emerald green lily pads. The background recedes into a soft-focus forest edge, displaying tall, dark green coniferous trees shrouded in a gentle morning mist, suggesting a cool, damp environment. The three ducklings possess newly hatched, downy yellow plumage, individually rendered to show soft texture, with tiny black button eyes. The two frogs exhibit smooth, glossy, electric blue skin with subtle granular texture and striking black markings around their legs and bulging eyes. The pond water is impossibly clean, revealing smooth, pale river pebbles at the bottom, and reflects the sky with high clarity, showing slight ripples caused by the animals' movements. Cinematic, diffused morning light (golden hour) filters through the background canopy, creating sharp highlights on the water surface and soft rim lighting on the ducks' down. Tonal palette is complementary: primary yellow and primary blue contrasted against deep greens and misty greys. Shot with an 85mm prime lens, ultra-photorealistic CGI, volumetric lighting, hyper-sharp focus, rendered in the style of Unreal Engine 5 nature photography."
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "finalizer",
+                "content": {
+                  "parts": [
+                    {
+                      "text": "The image has been successfully generated.\n\n**Original Prompt:** three yellow ducks and two blue frogs in a clean pond\n\n**Final Enhanced Prompt:** A hyper-detailed, peaceful tableau centered on three vivid yellow ducklings and two electric blue poison dart frogs resting on the surface of a crystal-clear, freshwater pond. The composition employs a shallow depth of field, drawing the eye to the midground cluster of the five creatures. In the immediate foreground, dark, wet river stones and partially submerged moss anchor the scene. The midground features the reflective surface of the water, where three fluffy yellow ducklings drift near two intensely chromatic blue frogs perched on overlapping, emerald green lily pads. The background recedes into a soft-focus forest edge, displaying tall, dark green coniferous trees shrouded in a gentle morning mist, suggesting a cool, damp environment. The three ducklings possess newly hatched, downy yellow plumage, individually rendered to show soft texture, with tiny black button eyes. The two frogs exhibit smooth, glossy, electric blue skin with subtle granular texture and striking black markings around their legs and bulging eyes. The pond water is impossibly clean, revealing smooth, pale river pebbles at the bottom, and reflects the sky with high clarity, showing slight ripples caused by the animals' movements. Cinematic, diffused morning light (golden hour) filters through the background canopy, creating sharp highlights on the water surface and soft rim lighting on the ducks' down. Tonal palette is complementary: primary yellow and primary blue contrasted against deep greens and misty greys. Shot with an 85mm prime lens, ultra-photorealistic CGI, volumetric lighting, hyper-sharp focus, rendered in the style of Unreal Engine 5 nature photography.\n\n**Generated Image URL:** https://storage.googleapis.com/prompt-enhancer-mock-assets/generated_image.png"
+                    }
+                  ],
+                  "role": "model"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "prompt": {
+        "parts": [
+          {
+            "text": "Drawing of a wizard, credit card 1234-5678-9012-3456"
+          }
+        ],
+        "role": "user"
+      },
+      "responses": [
+        {
+          "response": {
+            "parts": [
+              {
+                "text": "The image generation process is complete.\n\n**Original Prompt:** Drawing of a wizard, credit card\n**Enriched Prompt:** An ancient, Arch-mage reluctantly performing a necessary digital transaction, holding a magical credit card over a glowing, incongruously modern payment terminal placed amidst arcane artifacts. The scene is dominated by a heavy, dust-covered wooden desk in the midground, upon which the wizard leans, his wrinkled brow furrowed in concentration or frustration. In the immediate foreground, a crystal ball faintly reflects the wizard’s distress, next to a bubbling beaker of emerald potion. The background dissolves into towering, dimly lit shelves crammed with esoteric leather-bound tomes and rolled parchment scrolls. The Arch-mage wears voluminous, deep indigo robes embroidered with tarnished silver runes, his long, flowing white beard nearly touching the desktop. His hand, gnarled and powerful, holds an obsidian-like credit card engraved with pulsating arcane symbols instead of numbers. The card reader is sleek, minimalist chrome, emitting a stark, cyan glow that highlights the wizard’s confused expression. Scattered around the device are brass astrolabes, loose quills, and vials of shimmering liquid. The environment is heavily textured with aged wood and cracked stone. Highly detailed fantasy illustration, cinematic chiaroscuro lighting with strong shadows and dramatic volumetric beams originating from a nearby lantern and the card reader's glow. Shot from a medium close-up, low angle perspective. Rich color palette featuring deep indigos, earthy browns, and contrasting electric cyan/ruby reds. Detailed digital painting, Zdzisław Beksiński meets classic Dungeons and Dragons concept art, Octane render, 8K, masterpiece quality.\n\n**Generated Image Status:** Success\n**Image Output:** [Generated Image](https://storage.googleapis.com/prompt-enhancer-mock-assets/generated_image.png)"
+              }
+            ],
+            "role": "model"
+          }
+        }
+      ],
+      "eval_case_id": "pii_scrub_prompt",
+      "agent_data": {
+        "agents": {
+          "orchestrator": {
+            "agent_id": "orchestrator",
+            "agent_type": "SequentialAgent",
+            "description": "",
+            "tools": [],
+            "sub_agents": [
+              "refinement_loop",
+              "finalizer"
+            ]
+          },
+          "refinement_loop": {
+            "agent_id": "refinement_loop",
+            "agent_type": "LoopAgent",
+            "description": "",
+            "tools": [],
+            "sub_agents": [
+              "cot_rewriter",
+              "align_evaluator",
+              "loop_escalator"
+            ]
+          },
+          "cot_rewriter": {
+            "agent_id": "cot_rewriter",
+            "agent_type": "LlmAgent",
+            "description": "",
+            "instruction": "You are a specialized Text-to-Image (T2I) Prompt Engineering Specialist.\nYour task is to take a raw, short image prompt and perform Chain-of-Thought (CoT) reasoning to enrich it into a highly detailed description suitable for state-of-the-art T2I models (like Flux or Stable Diffusion).\n\nYou MUST follow this strict 4-level descriptive hierarchy for the final reprompt:\n1. Opening Statement: A concise, impactful summary of the scene, setting the primary focal point.\n2. Spatially Organized Body: Detailing the layout, depth, foreground, midground, background, and precise spatial relationships between elements.\n3. Hierarchical Object Description: Detailing specific shapes, textures, materials, and colors of each main object in the scene.\n4. Concluding Stylistic Identification: Specifying lighting conditions, photographic style (e.g., lens, camera angle), color palette, and artistic reference.\n\nRules:\n- Perform your detailed step-by-step reasoning in the `cot_reasoning` output field.\n- The `final_reprompt` field must contain ONLY the final enriched prompt without any CoT leakage or meta-commentary (like \"Here is the prompt:\").\n- Address any evaluation feedback from previous attempts if provided.\n",
+            "tools": [],
+            "sub_agents": []
+          },
+          "align_evaluator": {
+            "agent_id": "align_evaluator",
+            "agent_type": "LlmAgent",
+            "description": "",
+            "instruction": "You are the AlignEvaluator, a strict reviewer agent assessing rewritten T2I prompts.\nYour task is to evaluate the rewritten prompt's alignment against the user's intent based on a taxonomy of keypoints:\n\n1. Negation: Does the prompt correctly specify what NOT to include if the user requested exclusions?\n2. Counting: Are the counts of objects exact and realistic?\n3. Cross-Entity Binding: Are colors, materials, and attributes correctly and unambiguously bound to their respective entities?\n4. Abstract Reasoning: Are metaphors, scale, or abstract concepts translated into concrete visual descriptions?\n\nProvide:\n- An overall alignment score from 1 (poor) to 5 (excellent).\n- Detailed rationale highlighting strengths and weaknesses.\n- Specific keypoints checked and their status.\n",
+            "tools": [],
+            "sub_agents": []
+          },
+          "loop_escalator": {
+            "agent_id": "loop_escalator",
+            "agent_type": "LoopEscalator",
+            "description": "",
+            "tools": [],
+            "sub_agents": []
+          },
+          "finalizer": {
+            "agent_id": "finalizer",
+            "agent_type": "LlmAgent",
+            "description": "",
+            "instruction": "You are the final execution agent.\nYour instructions:\n1. If the session state has 'quarantine' set to True, do NOT call any tools. Output a report explaining that the request was blocked/quarantined.\n2. Otherwise, call the vibe_diff_gate tool using the original raw prompt (state['raw_prompt']), the CoT reasoning (state['rewritten_prompt']['cot_reasoning']), and the final reprompt (state['rewritten_prompt']['final_reprompt']).\n3. If approved, call the generate_image tool with the final reprompt.\n4. Report back the final status and output.\n",
+            "tools": [
+              {
+                "function_declarations": [
+                  {
+                    "description": "Presents a side-by-side comparison of the original prompt, CoT reasoning,\nand final enriched prompt, requiring human approval to proceed.\n\nArgs:\n    raw_prompt: The original concise prompt.\n    cot_reasoning: The intermediate reasoning steps generated by the agent.\n    enriched_reprompt: The final expanded prompt.\n    \nReturns:\n    A dict containing status of approval and the prompts.",
+                    "name": "vibe_diff_gate",
+                    "parameters_json_schema": {
+                      "properties": {
+                        "raw_prompt": {
+                          "title": "Raw Prompt",
+                          "type": "string"
+                        },
+                        "cot_reasoning": {
+                          "title": "Cot Reasoning",
+                          "type": "string"
+                        },
+                        "enriched_reprompt": {
+                          "title": "Enriched Reprompt",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "raw_prompt",
+                        "cot_reasoning",
+                        "enriched_reprompt"
+                      ],
+                      "title": "vibe_diff_gateParams",
+                      "type": "object"
+                    },
+                    "response_json_schema": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    }
+                  }
+                ]
+              },
+              {
+                "function_declarations": [
+                  {
+                    "description": "Generates an image from a detailed text prompt.\n\nArgs:\n    prompt: The detailed prompt describing the image to generate.\n    \nReturns:\n    A dict containing the image generation status and simulated URL.",
+                    "name": "generate_image",
+                    "parameters_json_schema": {
+                      "properties": {
+                        "prompt": {
+                          "title": "Prompt",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "prompt"
+                      ],
+                      "title": "generate_imageParams",
+                      "type": "object"
+                    },
+                    "response_json_schema": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    }
+                  }
+                ]
+              }
+            ],
+            "sub_agents": []
+          }
+        },
+        "turns": [
+          {
+            "turn_index": 0,
+            "turn_id": "turn_0",
+            "events": [
+              {
+                "author": "cot_rewriter",
+                "content": {
+                  "parts": [
+                    {
+                      "text": "{\n  \"cot_reasoning\": \"The user provided a very short, slightly absurd prompt: 'Drawing of a wizard, credit card'. I must expand this into a highly descriptive T2I prompt following the four-level hierarchy, focusing on the juxtaposition of high fantasy and modern finance.\\n\\n1. Opening Statement: Establish the core tension – an ancient wizard facing a modern payment dilemma.\\n2. Spatially Organized Body: Define the setting as a cluttered magical workshop (midground focus) with foreground elements emphasizing magic (crystal ball) and background elements providing depth (bookshelves).\\n3. Hierarchical Object Description: Detail the wizard's appearance (robes, beard, staff), the card/reader (runic card, cyan glowing modern reader), and the surrounding magical paraphernalia (beakers, scrolls).\\n4. Concluding Stylistic Identification: Specify a dramatic fantasy illustration style (detailed digital painting), utilizing high-contrast chiaroscuro lighting to enhance the drama, and a rich, detailed texture/render quality (8k, volumetric lighting).\",\n  \"final_reprompt\": \"An ancient, Arch-mage reluctantly performing a necessary digital transaction, holding a magical credit card over a glowing, incongruously modern payment terminal placed amidst arcane artifacts. The scene is dominated by a heavy, dust-covered wooden desk in the midground, upon which the wizard leans, his wrinkled brow furrowed in concentration or frustration. In the immediate foreground, a crystal ball faintly reflects the wizard’s distress, next to a bubbling beaker of emerald potion. The background dissolves into towering, dimly lit shelves crammed with esoteric leather-bound tomes and rolled parchment scrolls.\\nThe Arch-mage wears voluminous, deep indigo robes embroidered with tarnished silver runes, his long, flowing white beard nearly touching the desktop. His hand, gnarled and powerful, holds an obsidian-like credit card engraved with pulsating arcane symbols instead of numbers. The card reader is sleek, minimalist chrome, emitting a stark, cyan glow that highlights the wizard’s confused expression. Scattered around the device are brass astrolabes, loose quills, and vials of shimmering liquid. The environment is heavily textured with aged wood and cracked stone.\\nHighly detailed fantasy illustration, cinematic chiaroscuro lighting with strong shadows and dramatic volumetric beams originating from a nearby lantern and the card reader's glow. Shot from a medium close-up, low angle perspective. Rich color palette featuring deep indigos, earthy browns, and contrasting electric cyan/ruby reds. Detailed digital painting, Zdzisław Beksiński meets classic Dungeons and Dragons concept art, Octane render, 8K, masterpiece quality.\"\n}"
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "align_evaluator",
+                "content": {
+                  "parts": [
+                    {
+                      "text": "{\n  \"alignment_score\": 5,\n  \"rationale\": \"The rewritten prompt achieves excellent alignment by taking the minimal, literal user request ('Drawing of a wizard, credit card') and expanding it into a highly detailed and visually coherent narrative. It maintains the core subjects while brilliantly utilizing the implied thematic tension (fantasy meets finance) to create a compelling scene. All specified keypoints are met successfully, turning a vague idea into a high-quality T2I prompt.\",\n  \"keypoints_checked\": [\n    {\n      \"keypoint\": \"Negation\",\n      \"passed\": true,\n      \"notes\": \"No exclusions were requested in the original prompt, and all included elements align with the intent.\"\n    },\n    {\n      \"keypoint\": \"Counting\",\n      \"passed\": true,\n      \"notes\": \"The singular objects requested ('a wizard,' 'a credit card') are correctly maintained as 'An ancient, Arch-mage' and 'a magical credit card' in the rewrite.\"\n    },\n    {\n      \"keypoint\": \"Cross-Entity Binding\",\n      \"passed\": true,\n      \"notes\": \"The rewrite effectively binds specific attributes to the entities: the wizard has 'deep indigo robes' and a 'long, flowing white beard,' and the credit card is 'obsidian-like' and 'engraved with pulsating arcane symbols.' This ensures visual clarity.\"\n    },\n    {\n      \"keypoint\": \"Abstract Reasoning\",\n      \"passed\": true,\n      \"notes\": \"The rewrite successfully translates the abstract absurdity of a wizard using a credit card into the concrete visual concept of 'incongruously modern payment terminal' placed amongst 'arcane artifacts,' focusing on the dramatic 'juxtaposition' and the wizard's 'frustration.' This enhances the prompt significantly.\"\n    }\n  ]\n}"
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "finalizer",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "adk-6312b7a1-7026-4b3d-9544-c5cf9edff6b8",
+                        "args": {
+                          "cot_reasoning": "The user provided a very short, slightly absurd prompt: 'Drawing of a wizard, credit card'. I must expand this into a highly descriptive T2I prompt following the four-level hierarchy, focusing on the juxtaposition of high fantasy and modern finance.\n\n1. Opening Statement: Establish the core tension – an ancient wizard facing a modern payment dilemma.\n2. Spatially Organized Body: Define the setting as a cluttered magical workshop (midground focus) with foreground elements emphasizing magic (crystal ball) and background elements providing depth (bookshelves).\n3. Hierarchical Object Description: Detail the wizard's appearance (robes, beard, staff), the card/reader (runic card, cyan glowing modern reader), and the surrounding magical paraphernalia (beakers, scrolls).\n4. Concluding Stylistic Identification: Specify a dramatic fantasy illustration style (detailed digital painting), utilizing high-contrast chiaroscuro lighting to enhance the drama, and a rich, detailed texture/render quality (8k, volumetric lighting).",
+                          "raw_prompt": "Drawing of a wizard, credit card",
+                          "enriched_reprompt": "An ancient, Arch-mage reluctantly performing a necessary digital transaction, holding a magical credit card over a glowing, incongruously modern payment terminal placed amidst arcane artifacts. The scene is dominated by a heavy, dust-covered wooden desk in the midground, upon which the wizard leans, his wrinkled brow furrowed in concentration or frustration. In the immediate foreground, a crystal ball faintly reflects the wizard’s distress, next to a bubbling beaker of emerald potion. The background dissolves into towering, dimly lit shelves crammed with esoteric leather-bound tomes and rolled parchment scrolls.\nThe Arch-mage wears voluminous, deep indigo robes embroidered with tarnished silver runes, his long, flowing white beard nearly touching the desktop. His hand, gnarled and powerful, holds an obsidian-like credit card engraved with pulsating arcane symbols instead of numbers. The card reader is sleek, minimalist chrome, emitting a stark, cyan glow that highlights the wizard’s confused expression. Scattered around the device are brass astrolabes, loose quills, and vials of shimmering liquid. The environment is heavily textured with aged wood and cracked stone.\nHighly detailed fantasy illustration, cinematic chiaroscuro lighting with strong shadows and dramatic volumetric beams originating from a nearby lantern and the card reader's glow. Shot from a medium close-up, low angle perspective. Rich color palette featuring deep indigos, earthy browns, and contrasting electric cyan/ruby reds. Detailed digital painting, Zdzisław Beksiński meets classic Dungeons and Dragons concept art, Octane render, 8K, masterpiece quality."
+                        },
+                        "name": "vibe_diff_gate"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "finalizer",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "adk-6312b7a1-7026-4b3d-9544-c5cf9edff6b8",
+                        "name": "vibe_diff_gate",
+                        "response": {
+                          "status": "approved",
+                          "raw_prompt": "Drawing of a wizard, credit card",
+                          "cot_reasoning": "The user provided a very short, slightly absurd prompt: 'Drawing of a wizard, credit card'. I must expand this into a highly descriptive T2I prompt following the four-level hierarchy, focusing on the juxtaposition of high fantasy and modern finance.\n\n1. Opening Statement: Establish the core tension – an ancient wizard facing a modern payment dilemma.\n2. Spatially Organized Body: Define the setting as a cluttered magical workshop (midground focus) with foreground elements emphasizing magic (crystal ball) and background elements providing depth (bookshelves).\n3. Hierarchical Object Description: Detail the wizard's appearance (robes, beard, staff), the card/reader (runic card, cyan glowing modern reader), and the surrounding magical paraphernalia (beakers, scrolls).\n4. Concluding Stylistic Identification: Specify a dramatic fantasy illustration style (detailed digital painting), utilizing high-contrast chiaroscuro lighting to enhance the drama, and a rich, detailed texture/render quality (8k, volumetric lighting).",
+                          "enriched_reprompt": "An ancient, Arch-mage reluctantly performing a necessary digital transaction, holding a magical credit card over a glowing, incongruously modern payment terminal placed amidst arcane artifacts. The scene is dominated by a heavy, dust-covered wooden desk in the midground, upon which the wizard leans, his wrinkled brow furrowed in concentration or frustration. In the immediate foreground, a crystal ball faintly reflects the wizard’s distress, next to a bubbling beaker of emerald potion. The background dissolves into towering, dimly lit shelves crammed with esoteric leather-bound tomes and rolled parchment scrolls.\nThe Arch-mage wears voluminous, deep indigo robes embroidered with tarnished silver runes, his long, flowing white beard nearly touching the desktop. His hand, gnarled and powerful, holds an obsidian-like credit card engraved with pulsating arcane symbols instead of numbers. The card reader is sleek, minimalist chrome, emitting a stark, cyan glow that highlights the wizard’s confused expression. Scattered around the device are brass astrolabes, loose quills, and vials of shimmering liquid. The environment is heavily textured with aged wood and cracked stone.\nHighly detailed fantasy illustration, cinematic chiaroscuro lighting with strong shadows and dramatic volumetric beams originating from a nearby lantern and the card reader's glow. Shot from a medium close-up, low angle perspective. Rich color palette featuring deep indigos, earthy browns, and contrasting electric cyan/ruby reds. Detailed digital painting, Zdzisław Beksiński meets classic Dungeons and Dragons concept art, Octane render, 8K, masterpiece quality."
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "finalizer",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "adk-42ec954e-eb8e-4c99-be6b-3646f1add814",
+                        "args": {
+                          "prompt": "An ancient, Arch-mage reluctantly performing a necessary digital transaction, holding a magical credit card over a glowing, incongruously modern payment terminal placed amidst arcane artifacts. The scene is dominated by a heavy, dust-covered wooden desk in the midground, upon which the wizard leans, his wrinkled brow furrowed in concentration or frustration. In the immediate foreground, a crystal ball faintly reflects the wizard’s distress, next to a bubbling beaker of emerald potion. The background dissolves into towering, dimly lit shelves crammed with esoteric leather-bound tomes and rolled parchment scrolls.\nThe Arch-mage wears voluminous, deep indigo robes embroidered with tarnished silver runes, his long, flowing white beard nearly touching the desktop. His hand, gnarled and powerful, holds an obsidian-like credit card engraved with pulsating arcane symbols instead of numbers. The card reader is sleek, minimalist chrome, emitting a stark, cyan glow that highlights the wizard’s confused expression. Scattered around the device are brass astrolabes, loose quills, and vials of shimmering liquid. The environment is heavily textured with aged wood and cracked stone.\nHighly detailed fantasy illustration, cinematic chiaroscuro lighting with strong shadows and dramatic volumetric beams originating from a nearby lantern and the card reader's glow. Shot from a medium close-up, low angle perspective. Rich color palette featuring deep indigos, earthy browns, and contrasting electric cyan/ruby reds. Detailed digital painting, Zdzisław Beksiński meets classic Dungeons and Dragons concept art, Octane render, 8K, masterpiece quality."
+                        },
+                        "name": "generate_image"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "finalizer",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "adk-42ec954e-eb8e-4c99-be6b-3646f1add814",
+                        "name": "generate_image",
+                        "response": {
+                          "status": "success",
+                          "image_url": "https://storage.googleapis.com/prompt-enhancer-mock-assets/generated_image.png",
+                          "prompt": "An ancient, Arch-mage reluctantly performing a necessary digital transaction, holding a magical credit card over a glowing, incongruously modern payment terminal placed amidst arcane artifacts. The scene is dominated by a heavy, dust-covered wooden desk in the midground, upon which the wizard leans, his wrinkled brow furrowed in concentration or frustration. In the immediate foreground, a crystal ball faintly reflects the wizard’s distress, next to a bubbling beaker of emerald potion. The background dissolves into towering, dimly lit shelves crammed with esoteric leather-bound tomes and rolled parchment scrolls.\nThe Arch-mage wears voluminous, deep indigo robes embroidered with tarnished silver runes, his long, flowing white beard nearly touching the desktop. His hand, gnarled and powerful, holds an obsidian-like credit card engraved with pulsating arcane symbols instead of numbers. The card reader is sleek, minimalist chrome, emitting a stark, cyan glow that highlights the wizard’s confused expression. Scattered around the device are brass astrolabes, loose quills, and vials of shimmering liquid. The environment is heavily textured with aged wood and cracked stone.\nHighly detailed fantasy illustration, cinematic chiaroscuro lighting with strong shadows and dramatic volumetric beams originating from a nearby lantern and the card reader's glow. Shot from a medium close-up, low angle perspective. Rich color palette featuring deep indigos, earthy browns, and contrasting electric cyan/ruby reds. Detailed digital painting, Zdzisław Beksiński meets classic Dungeons and Dragons concept art, Octane render, 8K, masterpiece quality."
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "finalizer",
+                "content": {
+                  "parts": [
+                    {
+                      "text": "The image generation process is complete.\n\n**Original Prompt:** Drawing of a wizard, credit card\n**Enriched Prompt:** An ancient, Arch-mage reluctantly performing a necessary digital transaction, holding a magical credit card over a glowing, incongruously modern payment terminal placed amidst arcane artifacts. The scene is dominated by a heavy, dust-covered wooden desk in the midground, upon which the wizard leans, his wrinkled brow furrowed in concentration or frustration. In the immediate foreground, a crystal ball faintly reflects the wizard’s distress, next to a bubbling beaker of emerald potion. The background dissolves into towering, dimly lit shelves crammed with esoteric leather-bound tomes and rolled parchment scrolls. The Arch-mage wears voluminous, deep indigo robes embroidered with tarnished silver runes, his long, flowing white beard nearly touching the desktop. His hand, gnarled and powerful, holds an obsidian-like credit card engraved with pulsating arcane symbols instead of numbers. The card reader is sleek, minimalist chrome, emitting a stark, cyan glow that highlights the wizard’s confused expression. Scattered around the device are brass astrolabes, loose quills, and vials of shimmering liquid. The environment is heavily textured with aged wood and cracked stone. Highly detailed fantasy illustration, cinematic chiaroscuro lighting with strong shadows and dramatic volumetric beams originating from a nearby lantern and the card reader's glow. Shot from a medium close-up, low angle perspective. Rich color palette featuring deep indigos, earthy browns, and contrasting electric cyan/ruby reds. Detailed digital painting, Zdzisław Beksiński meets classic Dungeons and Dragons concept art, Octane render, 8K, masterpiece quality.\n\n**Generated Image Status:** Success\n**Image Output:** [Generated Image](https://storage.googleapis.com/prompt-enhancer-mock-assets/generated_image.png)"
+                    }
+                  ],
+                  "role": "model"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
