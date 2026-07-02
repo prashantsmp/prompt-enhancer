@@ -1,9 +1,10 @@
+import asyncio
 # dashboard/main.py
 
 import os
 import httpx
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -51,55 +52,32 @@ def parse_session_info(session: dict) -> dict:
     # Count iterations of cot_rewriter runs
     iterations = sum(1 for e in events if e.get("author") == "cot_rewriter")
     
-    # Identify pending interrupt call directly from requestedToolConfirmations in actions
+    # Identify pending interrupt call by looking for unanswered adk_request_confirmation calls
     pending_interrupt_id = None
+    responded_call_ids = set()
+    for event in events:
+        parts = event.get("content", {}).get("parts", []) if event.get("content") else []
+        for part in parts:
+            func_resp = part.get("functionResponse") or part.get("function_response")
+            if func_resp:
+                resp_id = func_resp.get("id") or func_resp.get("response_id")
+                resp_content = func_resp.get("response") or {}
+                
+                if isinstance(resp_content, dict) and "confirmed" in resp_content:
+                    responded_call_ids.add(resp_id)
+                    
     for event in reversed(events):
-        actions = event.get("actions") or {}
-        confirmations = actions.get("requestedToolConfirmations") or {}
-        for call_id, conf in confirmations.items():
-            if not conf.get("confirmed"):
-                pending_interrupt_id = call_id
-                break
+        parts = event.get("content", {}).get("parts", []) if event.get("content") else []
+        for part in parts:
+            func_call = part.get("functionCall") or part.get("function_call")
+            if func_call and func_call.get("name") == "adk_request_confirmation":
+                call_id = func_call.get("id") or func_call.get("call_id")
+                if call_id and call_id not in responded_call_ids:
+                    pending_interrupt_id = call_id
+                    break
         if pending_interrupt_id:
             break
 
-    # Fallback to functionCall history if not found in actions
-    if not pending_interrupt_id:
-        responded_call_ids = set()
-        for event in events:
-            parts = event.get("content", {}).get("parts", []) if event.get("content") else []
-            for part in parts:
-                func_resp = part.get("functionResponse") or part.get("function_response")
-                if func_resp:
-                    resp_id = func_resp.get("id") or func_resp.get("response_id")
-                    resp_content = func_resp.get("response") or {}
-                    has_error = False
-                    if isinstance(resp_content, dict):
-                        has_error = "error" in resp_content
-                    elif isinstance(resp_content, str):
-                        has_error = "error" in resp_content.lower()
-                    if resp_id and not has_error:
-                        responded_call_ids.add(resp_id)
-
-        for event in reversed(events):
-            parts = event.get("content", {}).get("parts", []) if event.get("content") else []
-            for part in parts:
-                func_call = part.get("functionCall") or part.get("function_call")
-                if func_call:
-                    call_name = func_call.get("name")
-                    call_id = func_call.get("id")
-                    if call_name == "adk_request_confirmation":
-                        args = func_call.get("args") or {}
-                        orig_call = args.get("originalFunctionCall") or args.get("original_function_call") or {}
-                        if orig_call:
-                            call_name = orig_call.get("name")
-                            call_id = orig_call.get("id")
-                    if call_name == "vibe_diff_gate" and call_id not in responded_call_ids:
-                        pending_interrupt_id = call_id
-                        break
-            if pending_interrupt_id:
-                break
-            
     # Check if image has been generated
     image_url = None
     for event in reversed(events):
@@ -154,15 +132,41 @@ async def list_sessions():
         async with httpx.AsyncClient() as client:
             resp = await client.get(url, timeout=10.0)
             if resp.status_code != 200:
-                raise HTTPException(status_code=resp.status_code, detail="Failed to fetch sessions from ADK service.")
+                return JSONResponse(
+                    status_code=500,
+                    content={"error": f"Agent service returned {resp.status_code}: {resp.text}"}
+                )
+            
+            # The list endpoint does not return full events history.
+            # We must fetch the full session for each to parse pending tool calls.
             sessions = resp.json()
+            
+            fetch_tasks = []
+            for s in sessions:
+                sid = s.get("id")
+                fetch_tasks.append(client.get(f"{url}/{sid}", timeout=10.0))
+            
+            full_responses = await asyncio.gather(*fetch_tasks, return_exceptions=True)
+            
+            full_sessions = []
+            for fres in full_responses:
+                if isinstance(fres, httpx.Response) and fres.status_code == 200:
+                    full_sessions.append(fres.json())
+                else:
+                    # Ignore failed individual session fetches gracefully
+                    pass
+
             # Parse and transform each session
-            parsed = [parse_session_info(s) for s in sessions]
-            # Sort by last update time descending
-            parsed.sort(key=lambda x: x["last_update"] or 0, reverse=True)
+            parsed = [parse_session_info(s) for s in full_sessions]
+            
+            # Sort by last updated (newest first) if available
+            parsed.sort(
+                key=lambda x: x.get("last_update") or "", 
+                reverse=True
+            )
             return parsed
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error connecting to agent service: {e}")
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.post("/api/create")
 async def create_session(req: PromptRequest):
@@ -191,7 +195,7 @@ async def create_session(req: PromptRequest):
             }
             # We run it asynchronously. Since the agent will pause on the HITL gate, 
             # this call will complete and return the state up to the confirmation prompt.
-            run_resp = await client.post(run_url, json=payload, timeout=30.0)
+            run_resp = await client.post(run_url, json=payload, timeout=120.0)
             if run_resp.status_code != 200:
                 raise HTTPException(status_code=run_resp.status_code, detail="Agent run failed.")
                 
@@ -237,9 +241,9 @@ async def resume_session_with_decision(session_id: str, approved: bool):
                     {
                         "function_response": {
                             "id": interrupt_id,
-                            "name": "vibe_diff_gate",
+                            "name": "adk_request_confirmation",
                             "response": {
-                                "approved": approved
+                                "confirmed": approved
                             }
                         }
                     }
@@ -248,8 +252,8 @@ async def resume_session_with_decision(session_id: str, approved: bool):
         }
         
         # 3. POST to /run to resume execution
-        run_resp = await client.post(run_url, json=payload, timeout=30.0)
+        run_resp = await client.post(run_url, json=payload, timeout=120.0)
         if run_resp.status_code != 200:
-            raise HTTPException(status_code=run_resp.status_code, detail="Failed to resume session.")
+            raise HTTPException(status_code=run_resp.status_code, detail=f"Failed to resume session. Agent returned: {run_resp.text}")
             
         return {"status": "success", "message": "Session resumed successfully."}

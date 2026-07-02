@@ -1,0 +1,66 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: us-east1
+
+jobs:
+  deploy-agent:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy Agent to Cloud Run
+        run: |
+          gcloud run deploy prompt-enhancer-agent \
+            --source . \
+            --region ${{ env.REGION }} \
+            --memory 4Gi \
+            --cpu 1 \
+            --allow-unauthenticated \
+            --set-env-vars="GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }},GOOGLE_CLOUD_LOCATION=global"
+
+  deploy-dashboard:
+    runs-on: ubuntu-latest
+    needs: deploy-agent
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Get Agent URL
+        id: get-url
+        run: |
+          AGENT_URL=$(gcloud run services describe prompt-enhancer-agent --region ${{ env.REGION }} --format 'value(status.url)')
+          echo "AGENT_URL=$AGENT_URL" >> $GITHUB_ENV
+
+      - name: Deploy Dashboard to Cloud Run
+        run: |
+          gcloud run deploy prompt-enhancer-dashboard \
+            --source . \
+            --region ${{ env.REGION }} \
+            --port 8080 \
+            --service-account="prompt-enhancer-dashboard-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
+            --allow-unauthenticated \
+            --set-env-vars="AGENT_SERVICE_URL=${{ env.AGENT_URL }}"

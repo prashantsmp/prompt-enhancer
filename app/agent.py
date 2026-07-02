@@ -149,9 +149,14 @@ class LoopEscalator(BaseAgent):
                 
         print(f"[loop] Alignment Evaluator Score: {score}/5")
         
-        # If score >= 4, escalate=True to terminate the loop
-        if score >= 4:
-            print("[loop] Quality threshold satisfied. Exiting refinement loop.")
+        is_quarantined = ctx.session.state.get("quarantine", False)
+        
+        # If score >= 4 or quarantined, escalate=True to terminate the loop
+        if score >= 4 or is_quarantined:
+            if is_quarantined:
+                print("[loop] Session is quarantined. Exiting refinement loop.")
+            else:
+                print("[loop] Quality threshold satisfied. Exiting refinement loop.")
             yield Event(author=self.name, actions=EventActions(escalate=True))
         else:
             print("[loop] Quality threshold not met. Continuing refinement.")
@@ -207,7 +212,7 @@ finalizer = Agent(
 Your instructions:
 1. If the session state has 'quarantine' set to True, do NOT call any tools. Output a report explaining that the request was blocked/quarantined.
 2. Otherwise, call the vibe_diff_gate tool using the original raw prompt (state['raw_prompt']), the CoT reasoning (state['rewritten_prompt']['cot_reasoning']), and the final reprompt (state['rewritten_prompt']['final_reprompt']).
-3. If approved, call the generate_image tool with the final reprompt.
+3. NOTE: The system will intercept your vibe_diff_gate call and return an `adk_request_confirmation` response. When you receive `{"confirmed": true}`, this means the user APPROVED the prompt! YOU MUST THEN immediately call the `generate_image` tool with the final reprompt. Do not finish until you have called `generate_image`.
 4. Report back the final status and output.
 """,
     tools=[vibe_diff_tool, generate_image]
